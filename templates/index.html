@@ -7,8 +7,10 @@
     <title>Ninjabrain-Bot Overlay</title>
 </head>
 <body>
-    <div id='sse-data'></div>
-    <div id='error'></div>
+    <div id='container'>  
+        <div id='sse-data'><h1>Loading...</h1></div>
+        <div id='error'></div>
+    </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
