@@ -17,7 +17,7 @@ class App(ctk.CTk):
         self.label_info = ctk.CTkLabel(self, text="Ninjabrain-Bot Client v1.0.0")
         self.label_info.pack(pady=10)
 
-        link_label = ctk.CTkLabel(self, text=f"Running at: {App.get_ninb_page_url()}", text_color="yellow", fg_color="transparent", cursor="hand2")
+        link_label = ctk.CTkLabel(self, text=f"Url: {App.get_ninb_page_url()}", text_color="yellow", fg_color="transparent", cursor="hand2")
         link_label.pack(pady=10)
         link_label.bind("<Button-1>", lambda e: webbrowser.open(App.get_ninb_page_url()))
         
