@@ -5,12 +5,13 @@ import socket
 import webbrowser
 
 PORT = server.PORT
+VERSION = 'v1.0.0'
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Ninjabrain Bot")
+        self.title(f"Ninbot Local Overlay {VERSION}")
         self.geometry("400x300")
 
         self.label_info = ctk.CTkLabel(self, text="Ninjabrain-Bot Client v1.0.0")

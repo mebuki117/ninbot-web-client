@@ -18,20 +18,33 @@ document.addEventListener('DOMContentLoaded', function () {
                     </thead>
                     <tbody>
             `;
-
-            jsonData.predictions.forEach((prediction, index) => {
-                let certainty = (prediction.certainty * 100).toFixed(1);
-                let certaintyColor = getCertaintyColor(certainty);
-
-                tableHTML += `
-                    <tr>
-                        <td>(${prediction.x}, ${prediction.z})</td>
-                        <td style="color:${certaintyColor}">${certainty}%</td>
-                        <td>${Math.round(prediction.overworldDistance)}</td>
-                        <td>(${prediction.netherX}, ${prediction.netherZ})</td>
-                    </tr>
-                `;
-            });
+            
+            if (jsonData.predictions.length > 0) {
+                jsonData.predictions.forEach((prediction, index) => {
+                    let certainty = (prediction.certainty * 100).toFixed(1);
+                    let certaintyColor = getCertaintyColor(certainty);
+    
+                    tableHTML += `
+                        <tr>
+                            <td>(${prediction.x}, ${prediction.z})</td>
+                            <td style="color:${certaintyColor}">${certainty}%</td>
+                            <td>${Math.round(prediction.overworldDistance)}</td>
+                            <td>(${prediction.netherX}, ${prediction.netherZ})</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                [0,1,2,3,4].forEach(i => {
+                    tableHTML += `
+                        <tr>
+                            <td>(---, ---)</td>
+                            <td>--</td>
+                            <td>---</td>
+                            <td>(---, ---)</td>
+                        </tr>
+                    `;
+                })
+            }
 
             tableHTML += `
                     </tbody>

@@ -47,6 +47,10 @@ def run_flask():
 
 def load_options():
     global server_options
+    if not os.path.exists(f'{os.getcwd()}\\config.json'):
+        with open(f'{os.getcwd()}\\config.json','w+') as f:
+            return json.dump(server_options, f)
+        
     with open(f'{os.getcwd()}\\config.json','r') as f:
         server_options = json.load(f)
 
