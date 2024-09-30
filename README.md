@@ -7,7 +7,7 @@ Phone view:
 
 Config ui:
 
-![image](https://github.com/user-attachments/assets/b9f707ec-a532-47e3-b7c3-8a20966ddb9e)
+![image](https://github.com/user-attachments/assets/6210c76a-761d-430a-b639-25cb6cbfac21)
 
 ## Requirements
 - You need to use Ninjabrain Bot (version 1.5 or higher). You can download it here.
