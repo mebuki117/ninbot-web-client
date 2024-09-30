@@ -28,8 +28,8 @@ class App(ctk.CTk):
 
         self.var_show_angle = ctk.BooleanVar()
         
-        self.entry_show_angle = ctk.CTkCheckBox(self, text="Show angle", variable=self.var_show_angle)
-        self.entry_show_angle.pack(pady=10)
+        # self.entry_show_angle = ctk.CTkCheckBox(self, text="Show angle", variable=self.var_show_angle)
+        # self.entry_show_angle.pack(pady=10)
         
 
         self.button_update = ctk.CTkButton(self, text="Update Options", command=self.update_options)
@@ -50,12 +50,12 @@ class App(ctk.CTk):
 
     def update_options(self):
         use_chunk_coords_value = True if self.entry_use_chunk_coords.get() == 1 else False
-        show_angle_value = True if self.entry_show_angle.get() == 1 else False
+        # show_angle_value = True if self.entry_show_angle.get() == 1 else False
 
         try:
             print('updating options....')
             requests.post(f'http://localhost:{PORT}/update_option', json={"option": "use_chunk_coords", "value": use_chunk_coords_value})
-            requests.post(f'http://localhost:{PORT}/update_option', json={"option": "show_angle", "value": show_angle_value})
+            # requests.post(f'http://localhost:{PORT}/update_option', json={"option": "show_angle", "value": show_angle_value})
             print('updated options')
         except requests.RequestException as e:
             print(f"error updating options: {e}")
