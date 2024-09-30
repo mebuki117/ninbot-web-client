@@ -77,6 +77,10 @@ server_options = {
 
 load_options()
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
 @app.route('/get_options', methods=['GET'])
 def get_options():
     return jsonify(server_options), 200
@@ -86,17 +90,15 @@ def update_option():
     data = request.json
     option = data.get('option')
     value = data.get('value')
+
     if option in server_options:
         server_options[option] = value
         with open(f'{os.getcwd()}\\config.json','w+') as f:
             json.dump(server_options, f)
-        return jsonify({"status": "success", "message": f"{option} updated"}), 200
+        
+        return jsonify({"message": f"{option} updated"}), 200
     
-    return jsonify({"status": "error", "message": "Invalid option"}), 400
-
-@app.route('/')
-def index():
-    return render_template('index.html')
+    return jsonify({"error":"Invalid option"}), 400
 
 @app.route('/get_data')
 def get_data():
@@ -105,14 +107,11 @@ def get_data():
     
     data = copy.deepcopy(sse_fetcher.get_data())
 
-    
     use_chunk_coords = server_options.get('use_chunk_coords', False)
 
     playerData = data['playerPosition']
     px = playerData.get('xInOverworld', 0)
     pz = playerData.get('zInOverworld', 0)
-
-
 
     new_preds = list(map(lambda x: {
         "certainty": x['certainty'],

@@ -18,6 +18,11 @@ class App(ctk.CTk):
         link_label.pack(pady=10)
         link_label.bind("<Button-1>", lambda e: webbrowser.open(App.get_ninb_page_url()))
         
+        if App.has_update():
+            update_label = ctk.CTkLabel(self, text=f"NEW UPDATE AVAILABLE!! CLICK TO DOWNLOAD!!!", text_color="yellow", fg_color="transparent", cursor="hand2")
+            update_label.pack(pady=10)
+            update_label.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/cylorun/ninbot-overlay/releases/latest"))
+
         self.var_use_chunk_coords = ctk.BooleanVar()
         
         self.entry_use_chunk_coords = ctk.CTkCheckBox(self, text="Use Chunk Coords", variable=self.var_use_chunk_coords)
@@ -73,7 +78,39 @@ class App(ctk.CTk):
         except Exception as e:
             print(f"error getting ip: {e}")
 
-server.run_flask()
+    @staticmethod
+    def get_latest_github_release(repo):
+        url = f"https://api.github.com/repos/{repo}/releases/latest"
+        
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            release_data = response.json()
+            latest_version = release_data["tag_name"]
+            return latest_version
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching the latest release from GitHub: {e}")
+            return None
 
-app = App()
-app.mainloop()
+    @staticmethod
+    def compare_versions(current_version, latest_version):
+
+        def version_tuple(version):
+            return tuple(map(int, (version.strip('v').split("."))))
+        
+        current = version_tuple(current_version)
+        latest = version_tuple(latest_version)
+        
+        return latest > current
+
+    @staticmethod
+    def has_update():
+        latest_version = App.get_latest_github_release('cylorun/ninbot-overlay')
+        
+        return latest_version and App.compare_versions(VERSION, latest_version)
+
+if __name__ == '__main__':
+    server.run_flask()
+
+    app = App()
+    app.mainloop()
