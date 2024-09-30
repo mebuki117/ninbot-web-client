@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
 
             el.outerHTML = tableHTML;
+        } else {
+            const el = document.getElementById('error');
+            el.innerHTML = JSON.stringify(await res.json())
         }
     }
 

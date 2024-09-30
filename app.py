@@ -1,52 +1,81 @@
-from flask import Flask, Response, render_template, jsonify
-import requests, threading, json
-from sseclient import SSEClient
+import customtkinter as ctk
+import requests
+import server
+import socket
+import webbrowser
 
-import threading
-import json
-from sseclient import SSEClient
+PORT = server.PORT
 
-class EventDataFetcher:
-    def __init__(self, sse_url):
-        self.sse_url = sse_url
-        self.data = {}
-        self.error = None
-        self.thread = threading.Thread(target=self._sse_worker, daemon=True)
-    
-    def start(self):
-        self.thread.start()
-    
-    def _sse_worker(self):
+class App(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Ninjabrain Bot")
+        self.geometry("400x300")
+
+        self.label_info = ctk.CTkLabel(self, text="Ninjabrain-Bot Client v1.0.0")
+        self.label_info.pack(pady=10)
+
+        link_label = ctk.CTkLabel(self, text=f"Running at: {App.get_ninb_page_url()}", text_color="yellow", fg_color="transparent", cursor="hand2")
+        link_label.pack(pady=10)
+        link_label.bind("<Button-1>", lambda e: webbrowser.open(App.get_ninb_page_url()))
+        
+        self.var_use_chunk_coords = ctk.BooleanVar()
+        
+        self.entry_use_chunk_coords = ctk.CTkCheckBox(self, text="Use Chunk Coords", variable=self.var_use_chunk_coords)
+        self.entry_use_chunk_coords.pack(pady=10)
+
+        self.var_show_angle = ctk.BooleanVar()
+        
+        self.entry_show_angle = ctk.CTkCheckBox(self, text="Show angle", variable=self.var_show_angle)
+        self.entry_show_angle.pack(pady=10)
+        
+
+        self.button_update = ctk.CTkButton(self, text="Update Options", command=self.update_options)
+        self.button_update.pack(pady=20)
+
+        self.fetch_initial_options()
+
+    def fetch_initial_options(self):
         try:
-                
-            client = SSEClient(self.sse_url)
-            print('aja')
-            for msg in client:
-                if msg.event == 'message':
-                    self.data = json.loads(msg.data)
-            
-            self.error = None
+            response = requests.get(f'http://localhost:{PORT}/get_options')
+            if response.status_code == 200:
+                options = response.json()
+                print(options)
+                self.var_use_chunk_coords.set(options.get('use_chunk_coords', False))
+                self.var_show_angle.set(options.get('show_angle', False))
+        except requests.RequestException as e:
+            print(f"Error fetching options: {e}")
+
+    def update_options(self):
+        use_chunk_coords_value = self.entry_use_chunk_coords.get()
+        show_angle_value = self.entry_show_angle.get()
+
+        try:
+            requests.post(f'http://localhost:{PORT}/update_option', json={"option": "use_chunk_coords", "value": use_chunk_coords_value})
+            requests.post(f'http://localhost:{PORT}/update_option', json={"option": "show_angle", "value": show_angle_value})
+            print("Options updated successfully.")
+        except requests.RequestException as e:
+            print(f"Error updating options: {e}")
+    
+    @staticmethod
+    def get_ninb_page_url():
+        ip = App.get_local_ip()
+        return f'http://{ip}:{PORT}'
+    
+    @staticmethod
+    def get_local_ip():
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            return local_ip
         except Exception as e:
-            self.error = e.__str__()
-            
-    def get_data(self):
-        return self.data
+            print(f"Error getting local IP: {e}")
+            return None
 
-SSE_URL = 'http://localhost:52533/api/v1/stronghold/events' 
+server.run_flask()
 
-app = Flask(__name__)
-sse_fetcher = EventDataFetcher(SSE_URL)
-sse_fetcher.start()
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/events')
-def proxy_events():
-    if (sse_fetcher.error):
-        return jsonify({'error': sse_fetcher.error }), 500
-    return jsonify(sse_fetcher.get_data()), 200
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=31621)
+app = App()
+app.mainloop()
