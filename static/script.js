@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const dataDiv = document.getElementById('data');
+
     const update = async () => {
         const res = await fetch('/get_data');
 
         if (res.status === 200) {
-            const el = document.getElementById('sse-data');
             const jsonData = await res.json();
 
             let tableHTML = `
@@ -51,10 +52,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 </table>
             `;
 
-            el.outerHTML = tableHTML;
+            dataDiv.outerHTML = tableHTML;
         } else {
-            const el = document.getElementById('error');
-            el.innerHTML = JSON.stringify(await res.json())
+            dataDiv.innerHTML = "An error occured.<br> Is you ninbot running and has the \"Enable API\" option on?"
         }
     }
 
