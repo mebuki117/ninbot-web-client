@@ -1,0 +1,49 @@
+#sse-data {
+    /* width: 100%; */
+    border-collapse: collapse;
+    background-color: #222;
+    color: #fff;
+    font-family: Arial, sans-serif;
+}
+
+#sse-data th, #sse-data td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #444;
+}
+
+#sse-data th {
+    background-color: #333;
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+#sse-data td {
+    background-color: #2a2a2a;
+    color: #fff;
+}
+
+#sse-data tr:nth-child(odd) {
+    background-color: #292929;
+}
+
+#sse-data td span {
+    color: green;
+}
+
+#sse-data td:nth-child(2) {
+    font-weight: bold;
+}
+
+#sse-data td:nth-child(2)[style*="red"] {
+    color: red;
+}
+#sse-data td:nth-child(2)[style*="darkorange"] {
+    color: darkorange;
+}
+#sse-data td:nth-child(2)[style*="orange"] {
+    color: orange;
+}
+#sse-data td:nth-child(2)[style*="green"] {
+    color: green;
+}
