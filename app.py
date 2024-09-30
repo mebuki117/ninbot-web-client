@@ -6,11 +6,14 @@ import webbrowser
 import qrcode
 import io
 import multiprocessing
+import threading
 
 from PIL import Image
 
 PORT = server.PORT
 VERSION = 'v1.0.0'
+
+ctk.set_appearance_mode("dark")
 
 class App(ctk.CTk):
     def __init__(self):
@@ -36,18 +39,14 @@ class App(ctk.CTk):
             update_label.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/cylorun/ninbot-overlay/releases/latest"))
 
         self.var_use_chunk_coords = ctk.BooleanVar()
-        
         self.entry_use_chunk_coords = ctk.CTkCheckBox(self, text="Use Chunk Coords", variable=self.var_use_chunk_coords)
         self.entry_use_chunk_coords.pack(pady=10)
+        self.entry_use_chunk_coords.bind("<Button-1>", lambda e: threading.Thread(target=self.update_options, daemon=True).start())
 
         self.var_show_angle = ctk.BooleanVar()
-        
         self.entry_show_angle = ctk.CTkCheckBox(self, text="Show angle", variable=self.var_show_angle)
         self.entry_show_angle.pack(pady=10)
-        
-
-        self.button_update = ctk.CTkButton(self, text="Update Options", command=self.update_options)
-        self.button_update.pack(pady=20)
+        self.entry_show_angle.bind("<Button-1>", lambda e: threading.Thread(target=self.update_options, daemon=True).start())
 
         self.fetch_initial_options()
 
