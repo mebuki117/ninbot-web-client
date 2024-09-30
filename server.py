@@ -84,14 +84,24 @@ def update_option():
 def index():
     return render_template('index.html')
 
-@app.route('/events')
+@app.route('/get_data')
 def proxy_events():
-    include_options = bool(request.args.get('include_options', None))
     if (sse_fetcher.error):
         return jsonify({'error': sse_fetcher.error }), 500
     
     data = copy.deepcopy(sse_fetcher.get_data())
-    if include_options:
-        data['options'] = server_options
+
+    
+    use_chunk_coords = server_options.get('use_chunk_coords', False)
+    new_preds = list(map(lambda x: {
+        "certainty": x['certainty'],
+        "x": x['chunkX'] * (1 if use_chunk_coords else 16),
+        "z": x['chunkZ'] * (1 if use_chunk_coords else 16),
+        "netherX":  x['chunkX'] * 2,
+        "netherZ":  x['chunkZ'] * 2,
+        "overworldDistance": x['overworldDistance']
+    }, data['predictions']))
+    
+    data['predictions'] = new_preds
     
     return jsonify(data), 200

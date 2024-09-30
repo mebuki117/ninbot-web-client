@@ -41,7 +41,7 @@ class App(ctk.CTk):
             response = requests.get(f'http://localhost:{PORT}/get_options')
             if response.status_code == 200:
                 options = response.json()
-                print(options)
+
                 self.var_use_chunk_coords.set(options.get('use_chunk_coords', False))
                 self.var_show_angle.set(options.get('show_angle', False))
         except requests.RequestException as e:
