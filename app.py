@@ -3,6 +3,10 @@ import requests
 import server
 import socket
 import webbrowser
+import qrcode
+import io
+
+from PIL import Image
 
 PORT = server.PORT
 VERSION = 'v1.0.0'
@@ -12,9 +16,16 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title(f"Ninbot Local Overlay {VERSION}")
-        self.geometry("400x300")
+        self.geometry("400x430")
 
-        link_label = ctk.CTkLabel(self, text=f"Server URL: {App.get_ninb_page_url()}", text_color="yellow", fg_color="transparent", cursor="hand2")
+
+        qr_label = ctk.CTkLabel(self, text="", width=100, height=100)
+        qr_label.pack(pady=20)
+        qr_img = self.get_qr_code(App.get_ninb_page_url())
+        qr_label.configure(image=qr_img)
+        qr_label.image = qr_img
+        
+        link_label = ctk.CTkLabel(self, text=f"{App.get_ninb_page_url()}", text_color="yellow", fg_color="transparent", cursor="hand2")
         link_label.pack(pady=10)
         link_label.bind("<Button-1>", lambda e: webbrowser.open(App.get_ninb_page_url()))
         
@@ -61,6 +72,14 @@ class App(ctk.CTk):
             print('updated options')
         except requests.RequestException as e:
             print(f"error updating options: {e}")
+    
+    def get_qr_code(self, url):
+        img = qrcode.make(url)
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG") 
+        buffer.seek(0)
+        pil_image = Image.open(buffer)
+        return ctk.CTkImage(pil_image, size=(150, 150))
     
     @staticmethod
     def get_ninb_page_url():

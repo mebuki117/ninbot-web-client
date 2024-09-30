@@ -4,6 +4,7 @@ import time
 import os
 import copy
 import math
+import logging
 
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
@@ -66,6 +67,11 @@ def get_angle_to(x1, z1, x2, z2):
     return round(angleDegrees * 10) / 10.0
 
 app = Flask(__name__)
+
+app.logger.setLevel(logging.WARNING)
+
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.WARNING)
 
 sse_fetcher = EventDataFetcher(SSE_URL)
 sse_fetcher.start()
