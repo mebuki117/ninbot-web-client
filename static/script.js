@@ -1,20 +1,21 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const dataDiv = document.getElementById('data');
 
     const update = async () => {
         const res = await fetch('/get_data');
+        const dataDiv = document.getElementById('data');
 
         if (res.status === 200) {
             const jsonData = await res.json();
-
+            console.log(jsonData)
             let tableHTML = `
-                <table id="sse-data">
+                <table id="data">
                     <thead>
                         <tr>
                             <th>Location</th>
                             <th>%</th>
                             <th>Dist.</th>
                             <th>Nether</th>
+                            ${showAngle(jsonData) ? "<th>Angle</th>" : ""}
                         </tr>
                     </thead>
                     <tbody>
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <td style="color:${certaintyColor}">${certainty}%</td>
                             <td>${Math.round(prediction.overworldDistance)}</td>
                             <td>(${prediction.netherX}, ${prediction.netherZ})</td>
+                            ${showAngle(jsonData) ? `<td>${prediction.angle}</td>` : ""}
                         </tr>
                     `;
                 });
@@ -60,6 +62,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setInterval(update, 2000);
 });
+
+const showAngle = (data) => {
+    const firstPred = data?.predictions[0];
+    return firstPred && firstPred.angle
+}
 
 const getCertaintyColor = (certainty) => {
     if (certainty <= 10) {

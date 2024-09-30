@@ -3,6 +3,7 @@ import json
 import time
 import os
 import copy
+import math
 
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
@@ -54,6 +55,15 @@ def load_options():
     with open(f'{os.getcwd()}\\config.json','r') as f:
         server_options = json.load(f)
 
+def get_angle_to(x1, z1, x2, z2):
+    angleDegrees = math.degrees(math.atan2(z1 - z2, x1 - x2))
+    angleDegrees -= 90
+    if (angleDegrees > 180):
+        angleDegrees -= 360
+    elif (angleDegrees <= -180):
+        angleDegrees += 360
+
+    return round(angleDegrees * 10) / 10.0
 
 app = Flask(__name__)
 
@@ -62,7 +72,7 @@ sse_fetcher.start()
 
 server_options = {
     'use_chunk_coords': False,
-    # 'show_angle': True
+    'show_angle': True
 }
 
 load_options()
@@ -89,7 +99,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/get_data')
-def proxy_events():
+def get_data():
     if (sse_fetcher.error):
         return jsonify({'error': sse_fetcher.error }), 500
     
@@ -97,15 +107,23 @@ def proxy_events():
 
     
     use_chunk_coords = server_options.get('use_chunk_coords', False)
+
+    playerData = data['playerPosition']
+    px = playerData.get('xInOverworld', 0)
+    pz = playerData.get('zInOverworld', 0)
+
+
+
     new_preds = list(map(lambda x: {
         "certainty": x['certainty'],
         "x": x['chunkX'] * (1 if use_chunk_coords else 16),
         "z": x['chunkZ'] * (1 if use_chunk_coords else 16),
         "netherX":  x['chunkX'] * 2,
         "netherZ":  x['chunkZ'] * 2,
-        "overworldDistance": x['overworldDistance']
+        "overworldDistance": x['overworldDistance'],
+        "angle": get_angle_to(x['chunkX'] * 16, x['chunkZ'] * 16, px, pz) if server_options['show_angle'] else None
     }, data['predictions']))
-    
+
     data['predictions'] = new_preds
     
     return jsonify(data), 200
