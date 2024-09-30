@@ -1,6 +1,9 @@
 import threading
 import json
 import time
+import os
+import copy
+
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
 
@@ -35,12 +38,30 @@ class EventDataFetcher:
         return self.data
 
 
+def run_flask():
+    def run():
+        app.run(host='0.0.0.0', port=PORT, debug=False)
+        
+    flask_thread = threading.Thread(target=run, daemon=True)
+    flask_thread.start()
+
+def load_options():
+    global server_options
+    with open(f'{os.getcwd()}\\config.json','r') as f:
+        server_options = json.load(f)
+
+
 app = Flask(__name__)
+
+sse_fetcher = EventDataFetcher(SSE_URL)
+sse_fetcher.start()
 
 server_options = {
     'use_chunk_coords': False,
     'show_angle': True
 }
+
+load_options()
 
 @app.route('/get_options', methods=['GET'])
 def get_options():
@@ -53,11 +74,11 @@ def update_option():
     value = data.get('value')
     if option in server_options:
         server_options[option] = value
+        with open(f'{os.getcwd()}\\config.json','w+') as f:
+            json.dump(server_options, f)
         return jsonify({"status": "success", "message": f"{option} updated"}), 200
+    
     return jsonify({"status": "error", "message": "Invalid option"}), 400
-
-sse_fetcher = EventDataFetcher(SSE_URL)
-sse_fetcher.start()
 
 @app.route('/')
 def index():
@@ -65,13 +86,12 @@ def index():
 
 @app.route('/events')
 def proxy_events():
+    include_options = bool(request.args.get('include_options', None))
     if (sse_fetcher.error):
         return jsonify({'error': sse_fetcher.error }), 500
     
-    return jsonify(sse_fetcher.get_data()), 200
-
-def run_flask():
-    def run():
-        app.run(host='0.0.0.0', port=PORT, debug=False)
-    flask_thread = threading.Thread(target=run, daemon=True)
-    flask_thread.start()
+    data = copy.deepcopy(sse_fetcher.get_data())
+    if include_options:
+        data['options'] = server_options
+    
+    return jsonify(data), 200

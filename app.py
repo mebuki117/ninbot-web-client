@@ -48,15 +48,16 @@ class App(ctk.CTk):
             print(f"Error fetching options: {e}")
 
     def update_options(self):
-        use_chunk_coords_value = self.entry_use_chunk_coords.get()
-        show_angle_value = self.entry_show_angle.get()
+        use_chunk_coords_value = True if self.entry_use_chunk_coords.get() == 1 else False
+        show_angle_value = True if self.entry_show_angle.get() == 1 else False
 
         try:
+            print('updating options....')
             requests.post(f'http://localhost:{PORT}/update_option', json={"option": "use_chunk_coords", "value": use_chunk_coords_value})
             requests.post(f'http://localhost:{PORT}/update_option', json={"option": "show_angle", "value": show_angle_value})
-            print("Options updated successfully.")
+            print('updated options')
         except requests.RequestException as e:
-            print(f"Error updating options: {e}")
+            print(f"error updating options: {e}")
     
     @staticmethod
     def get_ninb_page_url():
@@ -72,8 +73,7 @@ class App(ctk.CTk):
             s.close()
             return local_ip
         except Exception as e:
-            print(f"Error getting local IP: {e}")
-            return None
+            print(f"error getting ip: {e}")
 
 server.run_flask()
 
