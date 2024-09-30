@@ -41,11 +41,7 @@ class EventDataFetcher:
 
 
 def run_flask():
-    def run():
-        app.run(host='0.0.0.0', port=PORT, debug=False)
-        
-    flask_thread = threading.Thread(target=run, daemon=True)
-    flask_thread.start()
+    app.run(host='0.0.0.0', port=PORT, debug=False)
 
 def load_options():
     global server_options

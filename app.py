@@ -5,6 +5,7 @@ import socket
 import webbrowser
 import qrcode
 import io
+import multiprocessing
 
 from PIL import Image
 
@@ -129,7 +130,11 @@ class App(ctk.CTk):
         return latest_version and App.compare_versions(VERSION, latest_version)
 
 if __name__ == '__main__':
-    server.run_flask()
+    flask_process = multiprocessing.Process(target=server.run_flask)
+    flask_process.start()
 
     app = App()
     app.mainloop()
+
+    flask_process.terminate()
+    flask_process.join()
