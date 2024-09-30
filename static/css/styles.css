@@ -35,7 +35,7 @@
     font-weight: bold;
 }
 
-#sse-data td:nth-child(2)[style*="red"] {
+/* #sse-data td:nth-child(2)[style*="red"] {
     color: red;
 }
 #sse-data td:nth-child(2)[style*="darkorange"] {
@@ -46,4 +46,4 @@
 }
 #sse-data td:nth-child(2)[style*="green"] {
     color: green;
-}
+} */

@@ -20,14 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             jsonData.predictions.forEach((prediction, index) => {
                 let certainty = (prediction.certainty * 100).toFixed(1);
-                let certaintyColor = 'green';
-                if (certainty >= 30) {
-                    certaintyColor = 'orange';
-                } else if (certainty >= 20) {
-                    certaintyColor = 'darkorange';
-                } else if (certainty >= 10) {
-                    certaintyColor = 'red';
-                }
+                let certaintyColor = getCertaintyColor(certainty);
 
                 tableHTML += `
                     <tr>
@@ -50,3 +43,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setInterval(update, 1000);
 });
+
+const getCertaintyColor = (certainty) => {
+    if (certainty <= 10) {
+        return 'red'
+    }
+    if (certainty <= 20) {
+        return 'orange'
+    }
+    if (certainty <= 50) {
+        return 'yellow'
+    }
+    if (certainty <=70) {
+        return 'lightgreen'
+    }
+    if (certainty <= 85) {
+        return 'green'
+    }
+
+    return 'cyan'
+}
