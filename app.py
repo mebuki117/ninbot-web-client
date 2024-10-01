@@ -129,11 +129,10 @@ class App(ctk.CTk):
         return latest_version and App.compare_versions(VERSION, latest_version)
 
 if __name__ == '__main__':
-    flask_process = multiprocessing.Process(target=server.run_flask)
+    flask_process = threading.Thread(target=server.run_flask, daemon=True)
     flask_process.start()
 
     app = App()
     app.mainloop()
 
-    flask_process.terminate()
     flask_process.join()
