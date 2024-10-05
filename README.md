@@ -14,12 +14,12 @@ Config ui:
 - Make sure to enable the API option in the Ninjabrain Bot advanced settings,otherwise the overlay won't work.
 
 ## Getting started
-- Download the [latest release](https://github.com/cylorun/ninbot-overlay/releases/latest).
+- Download the [latest release](https://github.com/mebuki117/ninbot-web-client/releases/latest).
 - Run the downloaded file, and a window will open where you can configure stuff.
 - Once set up, open the provided URL in any browser on a device connected to the same local network (PC, phone, laptop, etc.).
 
   ### If you are not on windows
-  - Download the source code, [here](https://github.com/cylorun/ninbot-web-client/archive/refs/heads/main.zip)
+  - Download the source code, [here](https://github.com/mebuki117/ninbot-web-client/archive/refs/heads/more-features.zip)
   - Unzip the folder
   - Make sure you have python 3.12+ installed (other versions might work too, but 3.12 is a safe options since that's what i've used to dev this)
   - Run `pip install -r requirements.txt` in the directory of the project.
