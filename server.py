@@ -98,10 +98,12 @@ def process_predictions(data, player_position, use_chunk_coords):
                 else:
                     overworld_distance = pred['overworldDistance']
 
+                print(f"chunkX: {chunkX}, chunkZ: {chunkZ}")
+
                 predictions.append({
                     "certainty": pred['certainty'],
-                    "x": chunkX * (1 if use_chunk_coords else 16),
-                    "z": chunkZ * (1 if use_chunk_coords else 16),
+                    "x": chunkX if use_chunk_coords else (chunkX * 16 + 4),
+                    "z": chunkZ if use_chunk_coords else (chunkZ * 16 + 4),
                     "netherX": chunkX * 2,
                     "netherZ": chunkZ * 2,
                     "overworldDistance": overworld_distance,
@@ -117,8 +119,8 @@ def process_predictions(data, player_position, use_chunk_coords):
 
             predictions.append({
                 "certainty": pred['certainty'],
-                "x": chunkX * (1 if use_chunk_coords else 16),
-                "z": chunkZ * (1 if use_chunk_coords else 16),
+                "x": chunkX if use_chunk_coords else (chunkX * 16 + 4),
+                "z": chunkZ if use_chunk_coords else (chunkZ * 16 + 4),
                 "netherX": chunkX * 2,
                 "netherZ": chunkZ * 2,
                 "overworldDistance": pred['overworldDistance'],

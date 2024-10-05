@@ -53,11 +53,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         <td>${Math.round(prediction.overworldDistance)}</td>
                         <td>(${prediction.netherX}, ${prediction.netherZ})</td>
                         <td>
-                            ${showAngle(jsonData) ? `${prediction.angle}` : ""}
-                            <span style="color: ${getColorForAngleChange(prediction.angleChange)};">
-                                (${prediction.angleChange ? (prediction.angleChange > 0 ? "-> " : "<- ") + Math.abs(prediction.angleChange).toFixed(2) : "N/A"})
-                            </span>
-                        </td>
+                            ${showAngle(jsonData) ? 
+                                `${prediction.angle}
+                                <span style="color: ${getColorForAngleChange(prediction.angleChange)};">
+                                    (${prediction.angleChange ? (prediction.angleChange > 0 ? "-> " : "<- ") + Math.abs(prediction.angleChange).toFixed(2) : "N/A"})
+                                </span>` 
+                            : ""}
                     </tr>
                 `;
             });
