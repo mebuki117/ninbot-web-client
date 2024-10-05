@@ -98,8 +98,6 @@ def process_predictions(data, player_position, use_chunk_coords):
                 else:
                     overworld_distance = pred['overworldDistance']
 
-                print(f"chunkX: {chunkX}, chunkZ: {chunkZ}")
-
                 predictions.append({
                     "certainty": pred['certainty'],
                     "x": chunkX if use_chunk_coords else (chunkX * 16 + 4),
@@ -110,8 +108,6 @@ def process_predictions(data, player_position, use_chunk_coords):
                     "angle": get_angle_to(chunkX * 16, chunkZ * 16, px, pz) if server_options['show_angle'] else None,
                     "angleChange": angle_change
                 })
-        else:
-            print("Invalid coordinates or angle extracted.")
     else:
         for pred in data['predictions']:
             chunkX = pred['chunkX']
