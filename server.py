@@ -9,7 +9,10 @@ import logging
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
 
-SSE_URL = 'http://localhost:52533/api/v1/stronghold/events' 
+api_version = 1
+SSE_STRONGHOLD_URL = f'http://localhost:52533/api/v{api_version}/stronghold/events'
+SSE_BLIND_URL = f'http://localhost:52533/api/v{api_version}/blind/events'
+SSE_BOAT_URL = f'http://localhost:52533/api/v{api_version}/boat/events'
 PORT = 31621
 
 class EventDataFetcher:
@@ -62,6 +65,61 @@ def get_angle_to(x1, z1, x2, z2):
 
     return round(angleDegrees * 10) / 10.0
 
+import copy
+
+def process_predictions(data, player_position, use_chunk_coords):
+    px = player_position.get('xInOverworld', 0)
+    pz = player_position.get('zInOverworld', 0)
+
+    return list(map(lambda x: {
+        "certainty": x['certainty'],
+        "x": x['chunkX'] * (1 if use_chunk_coords else 16),
+        "z": x['chunkZ'] * (1 if use_chunk_coords else 16),
+        "netherX": x['chunkX'] * 2,
+        "netherZ": x['chunkZ'] * 2,
+        "overworldDistance": x['overworldDistance'],
+        "angle": get_angle_to(x['chunkX'] * 16, x['chunkZ'] * 16, px, pz) if server_options['show_angle'] else None
+    }, data['predictions']))
+
+def process_blind(player_data):
+    api_evaluations = {
+        'EXCELLENT': 'excellent',
+        'HIGHROLL_GOOD': 'good for highroll',
+        'HIGHROLL_OKAY': 'okay for highroll',
+        'BAD_BUT_IN_RING': 'bad, but in ring',
+        'BAD': 'bad',
+        'NOT_IN_RING': 'not in any ring'
+    }
+
+    evaluation = player_data.get('evaluation')
+    if evaluation in api_evaluations:
+        player_data['evaluation'] = api_evaluations[evaluation]
+
+    player_data['highrollProbability'] = f"{player_data.get('highrollProbability', 0) * 100:.1f}%"
+    return player_data
+
+def process_player_data(sse_fetcher, type):
+    data = copy.deepcopy(sse_fetcher.get_data())
+    
+    if type == 'stronghold':     
+        player_data = data.get('predictions', {})
+        use_chunk_coords = server_options.get('use_chunk_coords', False)
+        player_position = data['playerPosition']
+        
+        data['predictions'] = process_predictions(data, player_position, use_chunk_coords)
+        return data
+    
+    elif type == 'blind':      
+        player_data = data.get('blindResult', {})
+        
+        player_data['xInNether'] = round(player_data.get('xInNether', 0))
+        player_data['zInNether'] = round(player_data.get('zInNether', 0))
+
+        data['blindResult'] = process_blind(player_data)
+        return data
+
+    return data
+
 app = Flask(__name__)
 
 app.logger.setLevel(logging.WARNING)
@@ -69,8 +127,12 @@ app.logger.setLevel(logging.WARNING)
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.setLevel(logging.WARNING)
 
-sse_fetcher = EventDataFetcher(SSE_URL)
-sse_fetcher.start()
+sse_stronghold_fetcher = EventDataFetcher(SSE_STRONGHOLD_URL)
+sse_blind_fetcher = EventDataFetcher(SSE_BLIND_URL)
+sse_boat_fetcher = EventDataFetcher(SSE_BOAT_URL)
+sse_stronghold_fetcher.start()
+sse_blind_fetcher.start()
+sse_boat_fetcher.start()
 
 server_options = {
     'use_chunk_coords': False,
@@ -104,27 +166,42 @@ def update_option():
 
 @app.route('/get_data')
 def get_data():
-    if (sse_fetcher.error):
-        return jsonify({'error': sse_fetcher.error }), 500
-    
-    data = copy.deepcopy(sse_fetcher.get_data())
+    def get_response_code(player_data, base_code):
+        response_codes = {
+            'NONE': base_code,
+            'MEASURING': base_code + 1,
+            'VALID': base_code + 2,
+            'ERROR': base_code + 3
+        }
+        return response_codes.get(player_data)
 
-    use_chunk_coords = server_options.get('use_chunk_coords', False)
+    for fetcher in [sse_stronghold_fetcher, sse_blind_fetcher, sse_boat_fetcher]:
+        if fetcher.error:
+            return jsonify({'error': fetcher.error}), 510
 
-    playerData = data['playerPosition']
-    px = playerData.get('xInOverworld', 0)
-    pz = playerData.get('zInOverworld', 0)
+    boat_data = copy.deepcopy(sse_boat_fetcher.get_data())
+    player_data = boat_data.get('boatState', None)
 
-    new_preds = list(map(lambda x: {
-        "certainty": x['certainty'],
-        "x": x['chunkX'] * (1 if use_chunk_coords else 16),
-        "z": x['chunkZ'] * (1 if use_chunk_coords else 16),
-        "netherX":  x['chunkX'] * 2,
-        "netherZ":  x['chunkZ'] * 2,
-        "overworldDistance": x['overworldDistance'],
-        "angle": get_angle_to(x['chunkX'] * 16, x['chunkZ'] * 16, px, pz) if server_options['show_angle'] else None
-    }, data['predictions']))
+    data = process_player_data(sse_stronghold_fetcher, 'stronghold')
+    if data['predictions']:
+        base_code = 201
+        response_code = get_response_code(player_data, base_code)
+        return jsonify(data), response_code
+    elif data.get('eyeThrows'):
+        base_code = 206
+        response_code = get_response_code(player_data, base_code)
+        data['misread'] = True
+        return jsonify(data), response_code
 
-    data['predictions'] = new_preds
-    
-    return jsonify(data), 200
+    data = process_player_data(sse_blind_fetcher, 'blind')
+    if data['isBlindModeEnabled']:
+        base_code = 211
+        response_code = get_response_code(player_data, base_code)
+        return jsonify(data), response_code
+
+    response_code = get_response_code(player_data, 501)
+    if response_code:
+        data['angle'] = True if server_options['show_angle'] else None
+        return jsonify(data), response_code
+
+    return jsonify(data), 500

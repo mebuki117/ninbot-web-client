@@ -64,7 +64,7 @@ class App(ctk.CTk):
     def update_options(self):
         use_chunk_coords_value = True if self.entry_use_chunk_coords.get() == 1 else False
         show_angle_value = True if self.entry_show_angle.get() == 1 else False
-
+        
         try:
             print('updating options....')
             requests.post(f'http://localhost:{PORT}/update_option', json={"option": "use_chunk_coords", "value": use_chunk_coords_value})
