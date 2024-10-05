@@ -119,14 +119,14 @@ def get_data():
     playerData = sh_data['playerPosition']
     px = playerData.get('xInOverworld', 0)
     pz = playerData.get('zInOverworld', 0)
-
+    
     new_preds = list(map(lambda x: {
         "certainty": x['certainty'],
-        "x": x['chunkX'] * (1 if use_chunk_coords else 16),
-        "z": x['chunkZ'] * (1 if use_chunk_coords else 16),
+        "x": x['chunkX'] * (1 if use_chunk_coords else 16) + (0 if use_chunk_coords else 4),
+        "z": x['chunkZ'] * (1 if use_chunk_coords else 16) + (0 if use_chunk_coords else 4),
         "netherX":  x['chunkX'] * 2,
         "netherZ":  x['chunkZ'] * 2,
-        "overworldDistance": x['overworldDistance'],
+        "overworldDistance": x['overworldDistance'] / (8 if playerData.get('isInNether', False) else 1),
         "angle": get_angle_to(x['chunkX'] * 16, x['chunkZ'] * 16, px, pz) if server_options['show_angle'] else None
     }, sh_data['predictions']))
 
