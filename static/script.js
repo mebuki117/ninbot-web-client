@@ -52,7 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         <td style="color:${certaintyColor}">${certainty}%</td>
                         <td>${Math.round(prediction.overworldDistance)}</td>
                         <td>(${prediction.netherX}, ${prediction.netherZ})</td>
-                        ${showAngle(jsonData) ? `<td>${prediction.angle}</td>` : ""}
+                        <td>
+                            ${showAngle(jsonData) ? `${prediction.angle}` : ""}
+                            <span style="color: ${getColorForAngleChange(prediction.angleChange)};">
+                                (${prediction.angleChange ? (prediction.angleChange > 0 ? "-> " : "<- ") + Math.abs(prediction.angleChange).toFixed(2) : "N/A"})
+                            </span>
+                        </td>
                     </tr>
                 `;
             });
@@ -193,11 +198,23 @@ const showAngle = (data) => {
 
 const getCertaintyColor = (certainty) => {
     if (50 <= certainty) {
-        return getColors('#d8c064', '#59b94b', 51, Math.floor(certainty-50))
+        return getColors('#d8c064', '#59b94b', 51, Math.floor(certainty-50));
+    } else {
+        return getColors('#bd4141', '#d8c064', 51, Math.floor(certainty));
     }
-    else {
-        return getColors('#bd4141', '#d8c064', 51, Math.floor(certainty))
+}
+
+const getColorForAngleChange = (angleChange) => {
+    const absAngleChange = Math.abs(angleChange);
+    let color;
+
+    if (absAngleChange <= 180) {
+        color = getColors('#bd4141', '#59b94b', 181, Math.floor(180 - absAngleChange));
+    } else {
+        color = '#d8c064';
     }
+
+    return color;
 }
 
 function hexToRgb(hexColor) {

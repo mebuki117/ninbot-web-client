@@ -5,14 +5,16 @@ import os
 import copy
 import math
 import logging
+import re
+import pyperclip
 
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
 
-api_version = 1
-SSE_STRONGHOLD_URL = f'http://localhost:52533/api/v{api_version}/stronghold/events'
-SSE_BLIND_URL = f'http://localhost:52533/api/v{api_version}/blind/events'
-SSE_BOAT_URL = f'http://localhost:52533/api/v{api_version}/boat/events'
+API_VERSION = 1
+SSE_STRONGHOLD_URL = f'http://localhost:52533/api/v{API_VERSION}/stronghold/events'
+SSE_BLIND_URL = f'http://localhost:52533/api/v{API_VERSION}/blind/events'
+SSE_BOAT_URL = f'http://localhost:52533/api/v{API_VERSION}/boat/events'
 PORT = 31621
 
 class EventDataFetcher:
@@ -71,15 +73,60 @@ def process_predictions(data, player_position, use_chunk_coords):
     px = player_position.get('xInOverworld', 0)
     pz = player_position.get('zInOverworld', 0)
 
-    return list(map(lambda x: {
-        "certainty": x['certainty'],
-        "x": x['chunkX'] * (1 if use_chunk_coords else 16),
-        "z": x['chunkZ'] * (1 if use_chunk_coords else 16),
-        "netherX": x['chunkX'] * 2,
-        "netherZ": x['chunkZ'] * 2,
-        "overworldDistance": x['overworldDistance'],
-        "angle": get_angle_to(x['chunkX'] * 16, x['chunkZ'] * 16, px, pz) if server_options['show_angle'] else None
-    }, data['predictions']))
+    predictions = []
+
+    command = pyperclip.paste()
+    match = re.match(r'^/execute in ([^ ]+) run tp @s [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+$', command)
+    
+    if match:
+        dimension = match.group(1)
+        coordinates_and_angle = extract_coordinates_and_angle(command)
+
+        if coordinates_and_angle and all(item is not None for item in coordinates_and_angle):
+            current_position = (coordinates_and_angle[0], coordinates_and_angle[1])
+            current_angle = coordinates_and_angle[2]
+
+            for pred in data['predictions']:
+                chunkX = pred['chunkX']
+                chunkZ = pred['chunkZ']
+                target_position = ((chunkX * 16) + 4, (chunkZ * 16) + 4)
+
+                angle_change = round(calculate_angle_change(current_position, target_position, current_angle), 2)
+
+                if dimension == "minecraft:the_nether":
+                    overworld_distance = round(pred['overworldDistance'] / 8)
+                else:
+                    overworld_distance = pred['overworldDistance']
+
+                predictions.append({
+                    "certainty": pred['certainty'],
+                    "x": chunkX * (1 if use_chunk_coords else 16),
+                    "z": chunkZ * (1 if use_chunk_coords else 16),
+                    "netherX": chunkX * 2,
+                    "netherZ": chunkZ * 2,
+                    "overworldDistance": overworld_distance,
+                    "angle": get_angle_to(chunkX * 16, chunkZ * 16, px, pz) if server_options['show_angle'] else None,
+                    "angleChange": angle_change
+                })
+        else:
+            print("Invalid coordinates or angle extracted.")
+    else:
+        for pred in data['predictions']:
+            chunkX = pred['chunkX']
+            chunkZ = pred['chunkZ']
+
+            predictions.append({
+                "certainty": pred['certainty'],
+                "x": chunkX * (1 if use_chunk_coords else 16),
+                "z": chunkZ * (1 if use_chunk_coords else 16),
+                "netherX": chunkX * 2,
+                "netherZ": chunkZ * 2,
+                "overworldDistance": pred['overworldDistance'],
+                "angle": '---' if server_options['show_angle'] else None,
+                "angleChange": None
+            })
+
+    return predictions
 
 def process_blind(player_data):
     api_evaluations = {
@@ -107,6 +154,7 @@ def process_player_data(sse_fetcher, type):
         player_position = data['playerPosition']
         
         data['predictions'] = process_predictions(data, player_position, use_chunk_coords)
+
         return data
     
     elif type == 'blind':      
@@ -119,6 +167,36 @@ def process_player_data(sse_fetcher, type):
         return data
 
     return data
+
+def calculate_angle_change(current_position, target_position, current_angle):
+    x1, y1 = current_position
+    x2, y2 = target_position
+
+    delta_x = x2 - x1
+    delta_y = y2 - y1
+
+    target_angle_rad = math.atan2(delta_y, delta_x)
+    target_angle_deg = math.degrees(target_angle_rad)
+
+    target_angle_deg = (target_angle_deg + 270) % 360
+
+    current_angle = current_angle % 360
+
+    angle_change = target_angle_deg - current_angle
+
+    angle_change = (angle_change + 180) % 360 - 180
+
+    return angle_change
+
+def extract_coordinates_and_angle(command):
+    match = re.search(r'tp @s (-?\d+\.\d+) \d+\.\d+ (-?\d+\.\d+) (-?\d+\.\d+)', command)
+    if match:
+        x = float(match.group(1))
+        z = float(match.group(2))
+        angle = float(match.group(3))
+        return [x, z, angle]
+    else:
+        return None
 
 app = Flask(__name__)
 
