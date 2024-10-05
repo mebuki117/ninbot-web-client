@@ -8,29 +8,33 @@ import logging
 
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
+STRONGHOLD_SSE_URL = 'http://localhost:52533/api/v1/stronghold/events' 
+BOAT_SSE_URL = 'http://localhost:52533/api/v1/boat/events' 
 
-SSE_URL = 'http://localhost:52533/api/v1/stronghold/events' 
+
 PORT = 31621
 
-class EventDataFetcher:
-    def __init__(self, sse_url):
-        self.sse_url = sse_url
+class DataFetcher:
+    def __init__(self):
+        
         self.data = {}
         self.error = None
-        self.thread = threading.Thread(target=self._sse_worker, daemon=True)
-    
+        self.t1 = threading.Thread(target=lambda: self._sse_worker(STRONGHOLD_SSE_URL, "stronghold"), daemon=True)
+        self.t2 = threading.Thread(target=lambda: self._sse_worker(BOAT_SSE_URL, "boat"), daemon=True)
+
     def start(self):
-        self.thread.start()
+        self.t1.start()
+        self.t2.start()
     
-    def _sse_worker(self):
+    def _sse_worker(self, url, data_name):
         while True:
             try:
-                client = SSEClient(self.sse_url)
+                client = SSEClient(url)
                 self.error = None
                 
                 for msg in client:
                     if msg.event == 'message':
-                        self.data = json.loads(msg.data)
+                        self.data[data_name] = json.loads(msg.data)
                 
             except Exception as e:
                 self.error = e.__str__()
@@ -38,6 +42,7 @@ class EventDataFetcher:
 
     def get_data(self):
         return self.data
+
 
 
 def run_flask():
@@ -65,11 +70,10 @@ def get_angle_to(x1, z1, x2, z2):
 app = Flask(__name__)
 
 app.logger.setLevel(logging.WARNING)
-
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.setLevel(logging.WARNING)
 
-sse_fetcher = EventDataFetcher(SSE_URL)
+sse_fetcher = DataFetcher()
 sse_fetcher.start()
 
 server_options = {
@@ -108,10 +112,11 @@ def get_data():
         return jsonify({'error': sse_fetcher.error }), 500
     
     data = copy.deepcopy(sse_fetcher.get_data())
-
     use_chunk_coords = server_options.get('use_chunk_coords', False)
 
-    playerData = data['playerPosition']
+    sh_data = data['stronghold']
+    
+    playerData = sh_data['playerPosition']
     px = playerData.get('xInOverworld', 0)
     pz = playerData.get('zInOverworld', 0)
 
@@ -123,8 +128,7 @@ def get_data():
         "netherZ":  x['chunkZ'] * 2,
         "overworldDistance": x['overworldDistance'],
         "angle": get_angle_to(x['chunkX'] * 16, x['chunkZ'] * 16, px, pz) if server_options['show_angle'] else None
-    }, data['predictions']))
+    }, sh_data['predictions']))
 
-    data['predictions'] = new_preds
-    
+    sh_data['predictions'] = new_preds
     return jsonify(data), 200
