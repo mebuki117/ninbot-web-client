@@ -110,8 +110,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 <tr>
                     <td><span style="color:${evaluationColor}">${blind.highrollProbability}</span> chance of <400 block blind</td>
                 </tr>
+                <tr>
+                    <td>${blind.improveDirection}°, ${blind.improveDistance} blocks away, for better boords</td>
+                </tr>
             `;
-            tableHTML += Array(3).fill().map(() => `<tr><td>---</td></tr>`).join('');
+            tableHTML += Array(2).fill().map(() => `<tr><td>---</td></tr>`).join('');
         }
 
         tableHTML += `

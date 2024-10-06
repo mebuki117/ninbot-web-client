@@ -67,7 +67,8 @@ def get_angle_to(x1, z1, x2, z2):
 
     return round(angleDegrees * 10) / 10.0
 
-import copy
+def radians_to_degrees(radians):
+    return round(radians * (180 / math.pi), 1)
 
 def process_predictions(data, player_position, use_chunk_coords):
     px = player_position.get('xInOverworld', 0)
@@ -152,7 +153,6 @@ def process_player_data(sse_fetcher, type):
         player_position = data['playerPosition']
         
         data['predictions'] = process_predictions(data, player_position, use_chunk_coords)
-
         return data
     
     elif type == 'blind':      
@@ -160,6 +160,8 @@ def process_player_data(sse_fetcher, type):
         
         player_data['xInNether'] = round(player_data.get('xInNether', 0))
         player_data['zInNether'] = round(player_data.get('zInNether', 0))
+        player_data['improveDirection'] = radians_to_degrees(player_data.get('improveDirection', 0))
+        player_data['improveDistance'] = round(player_data.get('improveDistance', 0))
 
         data['blindResult'] = process_blind(player_data)
         return data
