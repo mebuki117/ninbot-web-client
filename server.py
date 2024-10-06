@@ -57,16 +57,6 @@ def load_options():
     with open(f'{os.getcwd()}\\config.json','r') as f:
         server_options = json.load(f)
 
-def get_angle_to(x1, z1, x2, z2):
-    angleDegrees = math.degrees(math.atan2(z1 - z2, x1 - x2))
-    angleDegrees -= 90
-    if (angleDegrees > 180):
-        angleDegrees -= 360
-    elif (angleDegrees <= -180):
-        angleDegrees += 360
-
-    return round(angleDegrees * 10) / 10.0
-
 def radians_to_degrees(radians):
     return round(radians * (180 / math.pi), 1)
 
@@ -81,7 +71,7 @@ def process_predictions(data, player_position, use_chunk_coords):
     
     if match:
         dimension = match.group(1)
-        coordinates_and_angle = extract_coordinates_and_angle(command)
+        coordinates_and_angle = get_coords_and_angle(command)
 
         if coordinates_and_angle and all(item is not None for item in coordinates_and_angle):
             current_position = (coordinates_and_angle[0], coordinates_and_angle[1])
@@ -106,7 +96,7 @@ def process_predictions(data, player_position, use_chunk_coords):
                     "netherX": chunkX * 2,
                     "netherZ": chunkZ * 2,
                     "overworldDistance": overworld_distance,
-                    "angle": get_angle_to(chunkX * 16, chunkZ * 16, px, pz) if server_options['show_angle'] else None,
+                    "angle": round(calculate_angle_change(current_position, target_position), 2) if server_options['show_angle'] else None,
                     "angleChange": angle_change
                 })
     else:
@@ -168,7 +158,7 @@ def process_player_data(sse_fetcher, type):
 
     return data
 
-def calculate_angle_change(current_position, target_position, current_angle):
+def calculate_angle_change(current_position, target_position, current_angle=None):
     x1, y1 = current_position
     x2, y2 = target_position
 
@@ -180,15 +170,19 @@ def calculate_angle_change(current_position, target_position, current_angle):
 
     target_angle_deg = (target_angle_deg + 270) % 360
 
-    current_angle = current_angle % 360
+    if current_angle is None:
+        if target_angle_deg > 180:
+            target_angle_deg -= 360
+        return target_angle_deg
 
+    current_angle = current_angle % 360
     angle_change = target_angle_deg - current_angle
 
     angle_change = (angle_change + 180) % 360 - 180
 
     return angle_change
 
-def extract_coordinates_and_angle(command):
+def get_coords_and_angle(command):
     match = re.search(r'tp @s (-?\d+\.\d+) \d+\.\d+ (-?\d+\.\d+) (-?\d+\.\d+)', command)
     if match:
         x = float(match.group(1))

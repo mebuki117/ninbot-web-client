@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             ${showAngle(jsonData) ? 
                                 `${prediction.angle}
                                 <span style="color: ${getColorForAngleChange(prediction.angleChange)};">
-                                    (${prediction.angleChange ? (prediction.angleChange > 0 ? "-> " : "<- ") + Math.abs(prediction.angleChange).toFixed(2) : "N/A"})
+                                    (${prediction.angleChange ? (prediction.angleChange > 0 ? "-> " : "<- ") + Math.abs(prediction.angleChange).toFixed(1) : "N/A"})
                                 </span>` 
                             : ""}
                     </tr>
