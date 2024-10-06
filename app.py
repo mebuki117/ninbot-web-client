@@ -5,7 +5,6 @@ import socket
 import webbrowser
 import qrcode
 import io
-import multiprocessing
 import threading
 
 from PIL import Image
