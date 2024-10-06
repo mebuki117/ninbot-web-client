@@ -12,9 +12,9 @@ from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
 
 API_VERSION = 1
-SSE_STRONGHOLD_URL = f'http://localhost:52533/api/v{API_VERSION}/stronghold/events'
-SSE_BLIND_URL = f'http://localhost:52533/api/v{API_VERSION}/blind/events'
-SSE_BOAT_URL = f'http://localhost:52533/api/v{API_VERSION}/boat/events'
+STRONGHOLD_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/stronghold/events'
+BLIND_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/blind/events'
+BOAT_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/boat/events'
 PORT = 31621
 
 class EventDataFetcher:
@@ -61,13 +61,9 @@ def radians_to_degrees(radians):
     return round(radians * (180 / math.pi), 1)
 
 def process_predictions(data, player_position, use_chunk_coords):
-    px = player_position.get('xInOverworld', 0)
-    pz = player_position.get('zInOverworld', 0)
-
     predictions = []
-
     command = pyperclip.paste()
-    match = re.match(r'^/execute in ([^ ]+) run tp @s [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+$', command)
+    match = re.match(r'^/execute in minecraft:(overworld|the_nether) run tp @s [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+$', command)
     
     if match:
         dimension = match.group(1)
@@ -82,7 +78,7 @@ def process_predictions(data, player_position, use_chunk_coords):
                 chunkZ = pred['chunkZ']
                 target_position = ((chunkX * 16) + 4, (chunkZ * 16) + 4)
 
-                angle_change = round(calculate_angle_change(current_position, target_position, current_angle), 2)
+                direction = round(get_direction(current_position, target_position, current_angle), 2)
 
                 if dimension == "minecraft:the_nether":
                     overworld_distance = round(pred['overworldDistance'] / 8)
@@ -96,8 +92,8 @@ def process_predictions(data, player_position, use_chunk_coords):
                     "netherX": chunkX * 2,
                     "netherZ": chunkZ * 2,
                     "overworldDistance": overworld_distance,
-                    "angle": round(calculate_angle_change(current_position, target_position), 2) if server_options['show_angle'] else None,
-                    "angleChange": angle_change
+                    "angle": round(get_direction(current_position, target_position), 2) if server_options['show_angle'] else None,
+                    "direction": direction
                 })
     else:
         for pred in data['predictions']:
@@ -158,7 +154,7 @@ def process_player_data(sse_fetcher, type):
 
     return data
 
-def calculate_angle_change(current_position, target_position, current_angle=None):
+def get_direction(current_position, target_position, current_angle=None):
     x1, y1 = current_position
     x2, y2 = target_position
 
@@ -176,11 +172,11 @@ def calculate_angle_change(current_position, target_position, current_angle=None
         return target_angle_deg
 
     current_angle = current_angle % 360
-    angle_change = target_angle_deg - current_angle
+    direction = target_angle_deg - current_angle
 
-    angle_change = (angle_change + 180) % 360 - 180
+    direction = (direction + 180) % 360 - 180
 
-    return angle_change
+    return direction
 
 def get_coords_and_angle(command):
     match = re.search(r'tp @s (-?\d+\.\d+) \d+\.\d+ (-?\d+\.\d+) (-?\d+\.\d+)', command)
@@ -199,15 +195,17 @@ app.logger.setLevel(logging.WARNING)
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.setLevel(logging.WARNING)
 
-sse_stronghold_fetcher = EventDataFetcher(SSE_STRONGHOLD_URL)
-sse_blind_fetcher = EventDataFetcher(SSE_BLIND_URL)
-sse_boat_fetcher = EventDataFetcher(SSE_BOAT_URL)
-sse_stronghold_fetcher.start()
-sse_blind_fetcher.start()
-sse_boat_fetcher.start()
+fetchers = {
+    'stronghold': EventDataFetcher(STRONGHOLD_SSE_URL),
+    'blind': EventDataFetcher(BLIND_SSE_URL),
+    'boat': EventDataFetcher(BOAT_SSE_URL)
+}
+
+for fetcher in fetchers.values():
+    fetcher.start()
 
 server_options = {
-    'use_chunk_coords': False,
+    'use_chunk_coords': True,
     'show_angle': True
 }
 
@@ -247,14 +245,14 @@ def get_data():
         }
         return response_codes.get(player_data)
 
-    for fetcher in [sse_stronghold_fetcher, sse_blind_fetcher, sse_boat_fetcher]:
+    for fetcher_name, fetcher in fetchers.items():
         if fetcher.error:
             return jsonify({'error': fetcher.error}), 510
 
-    boat_data = copy.deepcopy(sse_boat_fetcher.get_data())
+    boat_data = copy.deepcopy(fetchers['boat'].get_data())
     player_data = boat_data.get('boatState', None)
 
-    data = process_player_data(sse_stronghold_fetcher, 'stronghold')
+    data = process_player_data(fetchers['stronghold'], 'stronghold')
     if data['predictions']:
         base_code = 201
         response_code = get_response_code(player_data, base_code)
@@ -265,7 +263,7 @@ def get_data():
         data['misread'] = True
         return jsonify(data), response_code
 
-    data = process_player_data(sse_blind_fetcher, 'blind')
+    data = process_player_data(fetchers['blind'], 'blind')
     if data['isBlindModeEnabled']:
         base_code = 211
         response_code = get_response_code(player_data, base_code)
