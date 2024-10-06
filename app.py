@@ -18,7 +18,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title(f"Ninbot Local Overlay {VERSION}")
+        self.title(f"Ninbot Web Client {VERSION}")
         self.geometry("400x430")
 
 
