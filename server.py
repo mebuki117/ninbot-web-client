@@ -5,10 +5,13 @@ import os
 import copy
 import math
 import logging
+import requests
 
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
-STRONGHOLD_SSE_URL = 'http://localhost:52533/api/v1/stronghold/events' 
+
+NINBOT_BASE_URL = 'http://localhost:52533'
+STRONGHOLD_SSE_URL = f'{NINBOT_BASE_URL}/api/v1/stronghold/events' 
 BOAT_SSE_URL = 'http://localhost:52533/api/v1/boat/events' 
 
 
@@ -21,11 +24,12 @@ class DataFetcher:
         self.error = None
         self.t1 = threading.Thread(target=lambda: self._sse_worker(STRONGHOLD_SSE_URL, "stronghold"), daemon=True)
         self.t2 = threading.Thread(target=lambda: self._sse_worker(BOAT_SSE_URL, "boat"), daemon=True)
-
+        self.t3 = threading.Thread(target=self.fetch_version, daemon=True)
     def start(self):
         self.t1.start()
         self.t2.start()
-    
+        self.t3.start()
+
     def _sse_worker(self, url, data_name):
         while True:
             try:
@@ -40,6 +44,11 @@ class DataFetcher:
                 self.error = e.__str__()
                 time.sleep(5) # wait 5s before rc
 
+    def fetch_version(self):
+        res = requests.get(f'{NINBOT_BASE_URL}/api/v1/version')
+        if res.status_code == 200:
+            self.data['version'] = res.json()['version']
+    
     def get_data(self):
         return self.data
 

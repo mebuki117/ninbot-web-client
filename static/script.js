@@ -14,7 +14,7 @@ const update = async () => {
         let tableHTML = `
         <div id="data">
             <div id="header-bar"> 
-                <h1><b>Ninjabrain Bot</b> <span>v1.5.1</span></h1>
+                <h1><b>Ninjabrain Bot</b> <span>v${jsonData.version}</span></h1>
                 <ul>
                     <li><img src="static/${getBoatIconFromState(boatState)}"> </img</li>
                 </ul>
