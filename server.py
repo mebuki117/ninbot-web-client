@@ -21,14 +21,16 @@ PORT = 31621
 
 class DataFetcher:
     def __init__(self):
-        
         self.data = {}
         self.error = None
+        
+        # sorry
         self.t1 = threading.Thread(target=lambda: self._sse_worker(STRONGHOLD_SSE_URL, "stronghold"), daemon=True)
         self.t2 = threading.Thread(target=lambda: self._sse_worker(BOAT_SSE_URL, "boat"), daemon=True)
         self.t3 = threading.Thread(target=lambda: self._sse_worker(BLIND_SSE_URL, "blind"), daemon=True)
         self.t4 = threading.Thread(target=lambda: self._sse_worker(DIVINE_SSE_URL, "divine"), daemon=True)
         self.t5 = threading.Thread(target=self.fetch_version, daemon=True)
+
     def start(self):
         self.t1.start()
         self.t2.start()
@@ -59,27 +61,27 @@ class DataFetcher:
         return self.data
 
 
-    def _sse_worker(self, url, data_name):
-        while True:
-            try:
-                client = SSEClient(url)
-                self.error = None
+    # def _sse_worker(self, url, data_name):
+    #     while True:
+    #         try:
+    #             client = SSEClient(url)
+    #             self.error = None
                 
-                for msg in client:
-                    if msg.event == 'message':
-                        self.data[data_name] = json.loads(msg.data)
+    #             for msg in client:
+    #                 if msg.event == 'message':
+    #                     self.data[data_name] = json.loads(msg.data)
                 
-            except Exception as e:
-                self.error = e.__str__()
-                time.sleep(5) # wait 5s before rc
+    #         except Exception as e:
+    #             self.error = e.__str__()
+    #             time.sleep(5) # wait 5s before rc
 
-    def fetch_version(self):
-        res = requests.get(f'{NINBOT_BASE_URL}/api/v1/version')
-        if res.status_code == 200:
-            self.data['version'] = res.json()['version']
+    # def fetch_version(self):
+    #     res = requests.get(f'{NINBOT_BASE_URL}/api/v1/version')
+    #     if res.status_code == 200:
+    #         self.data['version'] = res.json()['version']
     
-    def get_data(self):
-        return self.data
+    # def get_data(self):
+    #     return self.data
 
 def run_flask():
     app.run(host='0.0.0.0', port=PORT, debug=False)

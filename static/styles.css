@@ -44,15 +44,16 @@ html, body {
     margin: 0;
     font-size: 3vw !important;
     padding-left: 10px;
-    font-family: 'Monaco';
-    color: rgb(204, 197, 197)
+    padding-bottom: 5px;
+    font-family: 'Open Sans', sans-serif;
+    color: #ffcc00
 }
 
 #header-bar h1 span {
     margin: 0;
     font-size: 2vw !important;
     padding-left: 10px;
-    color:#686767;
+    color:#856b06;
 }
 
 #header-bar ul {

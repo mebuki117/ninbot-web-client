@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
     update();
-    setInterval(update, 1000); // is 2000 better?
+    setInterval(update, 1000);
 });
 
 const generateTable = (jsonData, status) => {
@@ -44,7 +44,7 @@ const generateTable = (jsonData, status) => {
 
 const generateHeaderHTML = (version, boatState) => `
     <div id="header-bar"> 
-        <h1><b>Ninjabrain Bot</b> <span>v${version}</span></h1>
+        <h1>Ninjabrain Bot<span>v${version}</span></h1>
         <ul>
             <li><img src="static/${getBoatIconFromState(boatState)}" style="image-rendering: pixelated;" /></li>
         </ul>
@@ -242,12 +242,12 @@ const getDivineCoord = (coords, index) => {
 const getBoatIconFromState = (state) => {
     switch (state) {
         case 'NONE':
-            return 'boat_gray.png'
+            return 'assets/boat_gray.png'
         case 'ERROR':
-            return 'boat_red.png'
+            return 'assets/boat_red.png'
         case 'MEASURING':
-            return 'boat_blue.png'
+            return 'assets/boat_blue.png'
         case 'VALID':
-            return 'boat_green.png'
+            return 'assets/boat_green.png'
     }
 }
