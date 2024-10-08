@@ -7,44 +7,79 @@ import math
 import logging
 import re
 import pyperclip
+import requests
 
 from flask import Flask, jsonify, request, render_template
 from sseclient import SSEClient
 
-API_VERSION = 1
-STRONGHOLD_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/stronghold/events'
-BLIND_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/blind/events'
-BOAT_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/boat/events'
-DIVINE_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/divine/events'
+NINBOT_BASE_URL = 'http://localhost:52533'
+STRONGHOLD_SSE_URL = f'{NINBOT_BASE_URL}/api/v1/stronghold/events' 
+BLIND_SSE_URL = f'{NINBOT_BASE_URL}/api/v1/blind/events'
+BOAT_SSE_URL = f'{NINBOT_BASE_URL}/api/v1/boat/events'
+DIVINE_SSE_URL = f'{NINBOT_BASE_URL}/api/v1/divine/events'
 PORT = 31621
 
-class EventDataFetcher:
-    def __init__(self, sse_url):
-        self.sse_url = sse_url
+class DataFetcher:
+    def __init__(self):
+        
         self.data = {}
         self.error = None
-        self.thread = threading.Thread(target=self._sse_worker, daemon=True)
-    
+        self.t1 = threading.Thread(target=lambda: self._sse_worker(STRONGHOLD_SSE_URL, "stronghold"), daemon=True)
+        self.t2 = threading.Thread(target=lambda: self._sse_worker(BOAT_SSE_URL, "boat"), daemon=True)
+        self.t3 = threading.Thread(target=lambda: self._sse_worker(BLIND_SSE_URL, "blind"), daemon=True)
+        self.t4 = threading.Thread(target=lambda: self._sse_worker(DIVINE_SSE_URL, "divine"), daemon=True)
+        self.t5 = threading.Thread(target=self.fetch_version, daemon=True)
     def start(self):
-        self.thread.start()
-    
-    def _sse_worker(self):
+        self.t1.start()
+        self.t2.start()
+        self.t3.start()
+        self.t4.start()
+        self.t5.start()
+
+    def _sse_worker(self, url, data_name):
         while True:
             try:
-                client = SSEClient(self.sse_url)
+                client = SSEClient(url)
                 self.error = None
                 
                 for msg in client:
                     if msg.event == 'message':
-                        self.data = json.loads(msg.data)
+                        self.data[data_name] = json.loads(msg.data)
                 
             except Exception as e:
                 self.error = e.__str__()
                 time.sleep(5) # wait 5s before rc
 
+    def fetch_version(self):
+        res = requests.get(f'{NINBOT_BASE_URL}/api/v1/version')
+        if res.status_code == 200:
+            self.data['version'] = res.json()['version']
+    
     def get_data(self):
         return self.data
 
+
+    def _sse_worker(self, url, data_name):
+        while True:
+            try:
+                client = SSEClient(url)
+                self.error = None
+                
+                for msg in client:
+                    if msg.event == 'message':
+                        self.data[data_name] = json.loads(msg.data)
+                
+            except Exception as e:
+                self.error = e.__str__()
+                time.sleep(5) # wait 5s before rc
+
+    def fetch_version(self):
+        res = requests.get(f'{NINBOT_BASE_URL}/api/v1/version')
+        if res.status_code == 200:
+            self.data['version'] = res.json()['version']
+    
+    def get_data(self):
+        return self.data
 
 def run_flask():
     app.run(host='0.0.0.0', port=PORT, debug=False)
@@ -94,8 +129,7 @@ def get_predictions(data):
                     "netherZ": chunkZ * 2,
                     "overworldDistance": distance,
                     "angle": round(get_direction(current_position, target_position), 2) if server_options['show_angle'] else None,
-                    "direction": direction,
-                    "useChunk": True if server_options['use_chunk_coords'] else False
+                    "direction": direction
                 })
     else:
         for pred in data['predictions']:
@@ -110,8 +144,7 @@ def get_predictions(data):
                 "netherZ": chunkZ * 2,
                 "overworldDistance": pred['overworldDistance'],
                 "angle": '---' if server_options['show_angle'] else None,
-                "direction": None,
-                "useChunk": True if server_options['use_chunk_coords'] else False
+                "direction": None
             })
 
     return predictions
@@ -133,12 +166,10 @@ def get_blindresult(player_data):
     player_data['highrollProbability'] = f"{player_data.get('highrollProbability', 0) * 100:.1f}%"
     return player_data
 
-def get_player_data(sse_fetcher, type):
-    data = copy.deepcopy(sse_fetcher.get_data())
-    
+def get_player_data(data, type):    
     if type == 'stronghold':     
         player_data = data.get('predictions', {})
-        
+
         data['predictions'] = get_predictions(data)
         return data
     elif type == 'blind':      
@@ -195,15 +226,8 @@ app.logger.setLevel(logging.WARNING)
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.setLevel(logging.WARNING)
 
-fetchers = {
-    'stronghold': EventDataFetcher(STRONGHOLD_SSE_URL),
-    'blind': EventDataFetcher(BLIND_SSE_URL),
-    'boat': EventDataFetcher(BOAT_SSE_URL),
-    'divine': EventDataFetcher(DIVINE_SSE_URL)
-}
-
-for fetcher in fetchers.values():
-    fetcher.start()
+sse_fetcher = DataFetcher()
+sse_fetcher.start()
 
 server_options = {
     'use_chunk_coords': True,
@@ -237,47 +261,25 @@ def update_option():
 
 @app.route('/get_data')
 def get_data():
-    def get_response_code(boat_state, base_code):
-        response_codes = {
-            'NONE': base_code,
-            'MEASURING': base_code + 1,
-            'VALID': base_code + 2,
-            'ERROR': base_code + 3
-        }
-        return response_codes.get(boat_state)
+    if sse_fetcher.error:
+        return jsonify({'error': sse_fetcher.error}), 500
 
-    for fetcher_name, fetcher in fetchers.items():
-        if fetcher.error:
-            return jsonify({'error': fetcher.error}), 510
+    data = copy.deepcopy(sse_fetcher.get_data())
+    data['angle'] = server_options.get('show_angle', False)
+    data['useChunk'] = server_options.get('use_chunk_coords', False)
 
-    boat_state = copy.deepcopy(fetchers['boat'].get_data()).get('boatState', None)
+    if data['stronghold']['predictions']:
+        data['stronghold'] = get_player_data(data['stronghold'], 'stronghold')
+        return jsonify(data), 200 # stronghold
+    elif data['stronghold']['eyeThrows']:
+        return jsonify(data), 210 # misread
 
-    data = get_player_data(fetchers['stronghold'], 'stronghold')
-    if data['predictions']:
-        base_code = 200
-        response_code = get_response_code(boat_state, base_code)
-        return jsonify(data), response_code
-    elif data.get('eyeThrows'):
-        base_code = 205
-        response_code = get_response_code(boat_state, base_code)
-        data['misread'] = True
-        return jsonify(data), response_code
+    if data['blind'].get('isBlindModeEnabled'):
+        data['blind'] = get_player_data(data['blind'], 'blind')
+        return jsonify(data), 220 # blind
 
-    data = get_player_data(fetchers['blind'], 'blind')
-    if data['isBlindModeEnabled']:
-        base_code = 210
-        response_code = get_response_code(boat_state, base_code)
-        return jsonify(data), response_code
+    if data['divine'].get('isDivineModeEnabled'):
+        data['divine'] = get_player_data(data['divine'], 'divine')
+        return jsonify(data), 230 # divine
     
-    data = get_player_data(fetchers['divine'], 'divine')
-    if data['isDivineModeEnabled']:
-        base_code = 215
-        response_code = get_response_code(boat_state, base_code)
-        return jsonify(data), response_code
-
-    response_code = get_response_code(boat_state, 500)
-    data = {}
-    data['angle'] = True if server_options['show_angle'] else None
-    data['useChunk'] = True if server_options['use_chunk_coords'] else False
-    
-    return jsonify(data), response_code
+    return jsonify(data), 250 # idle
