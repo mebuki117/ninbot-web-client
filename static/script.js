@@ -186,8 +186,9 @@ const showAngle = (data) => {
 }
 
 const toggle_LocationChunk = (data) => {
-    const firstPred = data?.[0];
-    return firstPred && firstPred.useChunk
+    const firstPred = data?.predictions?.[0];
+    const useChunkvalue = firstPred ? firstPred.useChunk : data?.useChunk;
+    return useChunkvalue || false;
 }
 
 const getCertaintyColor = (certainty) => {
