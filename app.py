@@ -10,7 +10,7 @@ import threading
 from PIL import Image
 
 PORT = server.PORT
-VERSION = 'v1.2.0'
+VERSION = 'v1.2.1'
 
 ctk.set_appearance_mode("dark")
 
@@ -35,7 +35,7 @@ class App(ctk.CTk):
         if App.has_update():
             update_label = ctk.CTkLabel(self, text=f"NEW UPDATE AVAILABLE!! CLICK TO DOWNLOAD!!!", text_color="yellow", fg_color="transparent", cursor="hand2")
             update_label.pack(pady=10)
-            update_label.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/cylorun/ninbot-overlay/releases/latest"))
+            update_label.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/mebuki117/ninbot-web-client/releases/latest"))
 
         self.var_use_chunk_coords = ctk.BooleanVar()
         self.entry_use_chunk_coords = ctk.CTkCheckBox(self, text="Use Chunk Coords", variable=self.var_use_chunk_coords)
@@ -123,7 +123,7 @@ class App(ctk.CTk):
 
     @staticmethod
     def has_update():
-        latest_version = App.get_latest_github_release('cylorun/ninbot-overlay')
+        latest_version = App.get_latest_github_release('mebuki117/ninbot-web-client')
         
         return latest_version and App.compare_versions(VERSION, latest_version)
 
