@@ -1,24 +1,6 @@
 # Ninjabrainbot Local Overlay
 Easily display data from Ninjabrain Bot on any device connected to your local network, such as your PC, phone, or tablet.
 
-## Examples
-### Calculating:
-
-![image](https://github.com/user-attachments/assets/59732bfc-46c0-4a2e-962d-1da8eea17996)
-
-### Blind:
-
-![image](https://github.com/user-attachments/assets/f1d1359e-6f1a-4b0f-bbe4-b29157375246)
-
-### Divine:
-
-![image](https://github.com/user-attachments/assets/fe88e8ae-02fd-4ad5-88bf-8be26b0823fc)
-
-### Config ui:
-
-![image](https://github.com/user-attachments/assets/6210c76a-761d-430a-b639-25cb6cbfac21)
-
-
 ## Requirements
 - You need to use Ninjabrain Bot (version 1.5 or higher). You can download it here.
 - Make sure to enable the API option in the Ninjabrain Bot advanced settings,otherwise the overlay won't work.
@@ -37,3 +19,21 @@ Easily display data from Ninjabrain Bot on any device connected to your local ne
 
 ## Credits
 - Huge thanks to [mebuki](https://github.com/mebuki117) for adding a lot of ninjabrain bots features over to this.
+
+
+## Examples
+### Calculating:
+
+![image](https://github.com/user-attachments/assets/59732bfc-46c0-4a2e-962d-1da8eea17996)
+
+### Blind:
+
+![image](https://github.com/user-attachments/assets/f1d1359e-6f1a-4b0f-bbe4-b29157375246)
+
+### Divine:
+
+![image](https://github.com/user-attachments/assets/fe88e8ae-02fd-4ad5-88bf-8be26b0823fc)
+
+### Config ui:
+
+![image](https://github.com/user-attachments/assets/6210c76a-761d-430a-b639-25cb6cbfac21)
