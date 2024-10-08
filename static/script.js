@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const res = await fetch('/get_data');
         const dataDiv = document.getElementById('data');
 
-        if (res.ok || (res.status >= 501 && res.status <= 504)) {
+        if (res.ok || (res.status >= 500 && res.status <= 503)) {
             const jsonData = await res.json();
             console.log(jsonData);
             dataDiv.outerHTML = generateTable(jsonData, res.status);
