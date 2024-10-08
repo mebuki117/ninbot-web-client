@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <table id="data">
                 <thead>
                     <tr>
-                        <th>Location</th>
+                        <th>${toggle_LocationChunk(jsonData) ? 'Chunk' : 'Location'}</th>
                         <th>%</th>
                         <th>Dist.</th>
                         <th>Nether${boatstatus}</th>
@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         <td>
                             ${showAngle(jsonData) ? 
                                 `${prediction.angle}
-                                <span style="color: ${getColorForAngleChange(prediction.angleChange)};">
-                                    (${prediction.angleChange ? (prediction.angleChange > 0 ? "-> " : "<- ") + Math.abs(prediction.angleChange).toFixed(1) : "N/A"})
+                                <span style="color: ${getColorForDirection(prediction.direction)};">
+                                    (${prediction.direction ? (prediction.direction > 0 ? "-> " : "<- ") + Math.abs(prediction.direction).toFixed(1) : "N/A"})
                                 </span>` 
                             : ""}
                     </tr>
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <table id="data">
                 <thead>
                     <tr>
-                        <th>Location</th>
+                        <th>${toggle_LocationChunk(jsonData) ? 'Chunk' : 'Location'}</th>
                         <th>%</th>
                         <th>Dist.</th>
                         <th>Nether${boatstatus}</th>
@@ -200,6 +200,11 @@ const showAngle = (data) => {
     return (firstPred && firstPred.angle) || (data?.angle === true);
 }
 
+const toggle_LocationChunk = (data) => {
+    const firstPred = data?.predictions[0];
+    return firstPred && firstPred.useChunk
+}
+
 const getCertaintyColor = (certainty) => {
     if (50 <= certainty) {
         return getColors('#d8c064', '#59b94b', 51, Math.floor(certainty-50));
@@ -208,12 +213,12 @@ const getCertaintyColor = (certainty) => {
     }
 }
 
-const getColorForAngleChange = (angleChange) => {
-    const absAngleChange = Math.abs(angleChange);
+const getColorForDirection = (direction) => {
+    const absdirection = Math.abs(direction);
     let color;
 
-    if (absAngleChange <= 180) {
-        color = getColors('#bd4141', '#59b94b', 181, Math.floor(180 - absAngleChange));
+    if (absdirection <= 180) {
+        color = getColors('#bd4141', '#59b94b', 181, Math.floor(180 - absdirection));
     } else {
         color = '#d8c064';
     }

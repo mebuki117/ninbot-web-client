@@ -60,18 +60,18 @@ def load_options():
 def radians_to_degrees(radians):
     return round(radians * (180 / math.pi), 1)
 
-def process_predictions(data, player_position, use_chunk_coords):
+def get_predictions(data):
     predictions = []
     command = pyperclip.paste()
     match = re.match(r'^/execute in minecraft:(overworld|the_nether) run tp @s [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+ [-+]?[0-9]*\.?[0-9]+$', command)
     
     if match:
         dimension = match.group(1)
-        coordinates_and_angle = get_coords_and_angle(command)
+        coords_and_angle = get_coords_and_angle(command)
 
-        if coordinates_and_angle and all(item is not None for item in coordinates_and_angle):
-            current_position = (coordinates_and_angle[0], coordinates_and_angle[1])
-            current_angle = coordinates_and_angle[2]
+        if coords_and_angle and all(item is not None for item in coords_and_angle):
+            current_position = (coords_and_angle[0], coords_and_angle[1])
+            current_angle = coords_and_angle[2]
 
             for pred in data['predictions']:
                 chunkX = pred['chunkX']
@@ -80,20 +80,21 @@ def process_predictions(data, player_position, use_chunk_coords):
 
                 direction = round(get_direction(current_position, target_position, current_angle), 2)
 
-                if dimension == "minecraft:the_nether":
-                    overworld_distance = round(pred['overworldDistance'] / 8)
+                if dimension == "the_nether":
+                    distance = round(pred['overworldDistance'] / 8)
                 else:
-                    overworld_distance = pred['overworldDistance']
+                    distance = pred['overworldDistance']
 
                 predictions.append({
                     "certainty": pred['certainty'],
-                    "x": chunkX if use_chunk_coords else (chunkX * 16 + 4),
-                    "z": chunkZ if use_chunk_coords else (chunkZ * 16 + 4),
+                    "x": chunkX if server_options['use_chunk_coords'] else (chunkX * 16 + 4),
+                    "z": chunkZ if server_options['use_chunk_coords'] else (chunkZ * 16 + 4),
                     "netherX": chunkX * 2,
                     "netherZ": chunkZ * 2,
-                    "overworldDistance": overworld_distance,
+                    "overworldDistance": distance,
                     "angle": round(get_direction(current_position, target_position), 2) if server_options['show_angle'] else None,
-                    "direction": direction
+                    "direction": direction,
+                    "useChunk": True if server_options['use_chunk_coords'] else False
                 })
     else:
         for pred in data['predictions']:
@@ -102,18 +103,19 @@ def process_predictions(data, player_position, use_chunk_coords):
 
             predictions.append({
                 "certainty": pred['certainty'],
-                "x": chunkX if use_chunk_coords else (chunkX * 16 + 4),
-                "z": chunkZ if use_chunk_coords else (chunkZ * 16 + 4),
+                "x": chunkX if server_options['use_chunk_coords'] else (chunkX * 16 + 4),
+                "z": chunkZ if server_options['use_chunk_coords'] else (chunkZ * 16 + 4),
                 "netherX": chunkX * 2,
                 "netherZ": chunkZ * 2,
                 "overworldDistance": pred['overworldDistance'],
                 "angle": '---' if server_options['show_angle'] else None,
-                "angleChange": None
+                "direction": None,
+                "useChunk": True if server_options['use_chunk_coords'] else False
             })
 
     return predictions
 
-def process_blind(player_data):
+def get_blindresult(player_data):
     api_evaluations = {
         'EXCELLENT': 'excellent',
         'HIGHROLL_GOOD': 'good for highroll',
@@ -130,15 +132,13 @@ def process_blind(player_data):
     player_data['highrollProbability'] = f"{player_data.get('highrollProbability', 0) * 100:.1f}%"
     return player_data
 
-def process_player_data(sse_fetcher, type):
+def get_player_data(sse_fetcher, type):
     data = copy.deepcopy(sse_fetcher.get_data())
     
     if type == 'stronghold':     
         player_data = data.get('predictions', {})
-        use_chunk_coords = server_options.get('use_chunk_coords', False)
-        player_position = data['playerPosition']
         
-        data['predictions'] = process_predictions(data, player_position, use_chunk_coords)
+        data['predictions'] = get_predictions(data)
         return data
     
     elif type == 'blind':      
@@ -149,7 +149,7 @@ def process_player_data(sse_fetcher, type):
         player_data['improveDirection'] = radians_to_degrees(player_data.get('improveDirection', 0))
         player_data['improveDistance'] = round(player_data.get('improveDistance', 0))
 
-        data['blindResult'] = process_blind(player_data)
+        data['blindResult'] = get_blindresult(player_data)
         return data
 
     return data
@@ -252,7 +252,7 @@ def get_data():
     boat_data = copy.deepcopy(fetchers['boat'].get_data())
     player_data = boat_data.get('boatState', None)
 
-    data = process_player_data(fetchers['stronghold'], 'stronghold')
+    data = get_player_data(fetchers['stronghold'], 'stronghold')
     if data['predictions']:
         base_code = 201
         response_code = get_response_code(player_data, base_code)
@@ -263,7 +263,7 @@ def get_data():
         data['misread'] = True
         return jsonify(data), response_code
 
-    data = process_player_data(fetchers['blind'], 'blind')
+    data = get_player_data(fetchers['blind'], 'blind')
     if data['isBlindModeEnabled']:
         base_code = 211
         response_code = get_response_code(player_data, base_code)
