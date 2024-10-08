@@ -10,7 +10,7 @@ import threading
 from PIL import Image
 
 PORT = server.PORT
-VERSION = 'v1.2.1'
+VERSION = 'v1.3.0'
 
 ctk.set_appearance_mode("dark")
 
