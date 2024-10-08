@@ -5,7 +5,6 @@ import socket
 import webbrowser
 import qrcode
 import io
-import multiprocessing
 import threading
 
 from PIL import Image
@@ -19,7 +18,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title(f"Ninbot Local Overlay {VERSION}")
+        self.title(f"Ninbot Web Client {VERSION}")
         self.geometry("400x430")
 
 
@@ -36,7 +35,7 @@ class App(ctk.CTk):
         if App.has_update():
             update_label = ctk.CTkLabel(self, text=f"NEW UPDATE AVAILABLE!! CLICK TO DOWNLOAD!!!", text_color="yellow", fg_color="transparent", cursor="hand2")
             update_label.pack(pady=10)
-            update_label.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/cylorun/ninbot-overlay/releases/latest"))
+            update_label.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/cylorun/ninbot-web-client/releases/latest"))
 
         self.var_use_chunk_coords = ctk.BooleanVar()
         self.entry_use_chunk_coords = ctk.CTkCheckBox(self, text="Use Chunk Coords", variable=self.var_use_chunk_coords)
@@ -64,7 +63,7 @@ class App(ctk.CTk):
     def update_options(self):
         use_chunk_coords_value = True if self.entry_use_chunk_coords.get() == 1 else False
         show_angle_value = True if self.entry_show_angle.get() == 1 else False
-
+        
         try:
             print('updating options....')
             requests.post(f'http://localhost:{PORT}/update_option', json={"option": "use_chunk_coords", "value": use_chunk_coords_value})
@@ -124,7 +123,7 @@ class App(ctk.CTk):
 
     @staticmethod
     def has_update():
-        latest_version = App.get_latest_github_release('cylorun/ninbot-overlay')
+        latest_version = App.get_latest_github_release('cylorun/ninbot-web-client')
         
         return latest_version and App.compare_versions(VERSION, latest_version)
 
