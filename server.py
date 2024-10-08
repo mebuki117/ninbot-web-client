@@ -15,6 +15,7 @@ API_VERSION = 1
 STRONGHOLD_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/stronghold/events'
 BLIND_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/blind/events'
 BOAT_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/boat/events'
+DIVINE_SSE_URL = f'http://localhost:52533/api/v{API_VERSION}/divine/events'
 PORT = 31621
 
 class EventDataFetcher:
@@ -140,7 +141,6 @@ def get_player_data(sse_fetcher, type):
         
         data['predictions'] = get_predictions(data)
         return data
-    
     elif type == 'blind':      
         player_data = data.get('blindResult', {})
         
@@ -151,8 +151,8 @@ def get_player_data(sse_fetcher, type):
 
         data['blindResult'] = get_blindresult(player_data)
         return data
-
-    return data
+    elif type == 'divine':
+        return data
 
 def get_direction(current_position, target_position, current_angle=None):
     x1, y1 = current_position
@@ -198,7 +198,8 @@ werkzeug_logger.setLevel(logging.WARNING)
 fetchers = {
     'stronghold': EventDataFetcher(STRONGHOLD_SSE_URL),
     'blind': EventDataFetcher(BLIND_SSE_URL),
-    'boat': EventDataFetcher(BOAT_SSE_URL)
+    'boat': EventDataFetcher(BOAT_SSE_URL),
+    'divine': EventDataFetcher(DIVINE_SSE_URL)
 }
 
 for fetcher in fetchers.values():
@@ -236,42 +237,47 @@ def update_option():
 
 @app.route('/get_data')
 def get_data():
-    def get_response_code(player_data, base_code):
+    def get_response_code(boat_state, base_code):
         response_codes = {
             'NONE': base_code,
             'MEASURING': base_code + 1,
             'VALID': base_code + 2,
             'ERROR': base_code + 3
         }
-        return response_codes.get(player_data)
+        return response_codes.get(boat_state)
 
     for fetcher_name, fetcher in fetchers.items():
         if fetcher.error:
             return jsonify({'error': fetcher.error}), 510
 
-    boat_data = copy.deepcopy(fetchers['boat'].get_data())
-    player_data = boat_data.get('boatState', None)
+    boat_state = copy.deepcopy(fetchers['boat'].get_data()).get('boatState', None)
 
     data = get_player_data(fetchers['stronghold'], 'stronghold')
     if data['predictions']:
-        base_code = 201
-        response_code = get_response_code(player_data, base_code)
+        base_code = 200
+        response_code = get_response_code(boat_state, base_code)
         return jsonify(data), response_code
     elif data.get('eyeThrows'):
-        base_code = 206
-        response_code = get_response_code(player_data, base_code)
+        base_code = 205
+        response_code = get_response_code(boat_state, base_code)
         data['misread'] = True
         return jsonify(data), response_code
 
     data = get_player_data(fetchers['blind'], 'blind')
     if data['isBlindModeEnabled']:
-        base_code = 211
-        response_code = get_response_code(player_data, base_code)
+        base_code = 210
+        response_code = get_response_code(boat_state, base_code)
+        return jsonify(data), response_code
+    
+    data = get_player_data(fetchers['divine'], 'divine')
+    if data['isDivineModeEnabled']:
+        base_code = 215
+        response_code = get_response_code(boat_state, base_code)
         return jsonify(data), response_code
 
-    response_code = get_response_code(player_data, 501)
-    if response_code:
-        data['angle'] = True if server_options['show_angle'] else None
-        return jsonify(data), response_code
-
-    return jsonify(data), 500
+    response_code = get_response_code(boat_state, 500)
+    data = {}
+    data['angle'] = True if server_options['show_angle'] else None
+    data['useChunk'] = True if server_options['use_chunk_coords'] else False
+    
+    return jsonify(data), response_code

@@ -13,178 +13,163 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const generateTable = (jsonData, status) => {
-        if (status >= 200 && status <= 204) {
+        if (status >= 200 && status <= 203) {
             return generateStrongholdTable(jsonData, status);
-        } else if (status >= 206 && status <= 209) {
+        } else if (status >= 205 && status <= 208) {
             return generateMisreadMessageTable(jsonData, status);
-        } else if (status >= 210 && status <= 214) {
+        } else if (status >= 210 && status <= 213) {
             return generateBlindTable(jsonData, status);
-        } else if (status >= 501 && status <= 504) {
+        } else if (status >= 215 && status <= 218) {
+            return generateDivineTable(jsonData, status);
+        } else if (status >= 500 && status <= 503) {
             return generateIdleTable(jsonData, status);
         }
         return '';
     }
 
+    const createTableHTML = (headers, bodyRows) => `
+        <table id="data">
+            <thead>
+                <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+                ${bodyRows.join('')}
+            </tbody>
+        </table>
+    `;
+
+    const generateRowHTML = (cells) => `
+        <tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>
+    `;
+
     const generateStrongholdTable = (jsonData, status) => {
-        const boatstatus = showAngle(jsonData) ? "" : getStatusSymbol(status);
-        let tableHTML = `
-            <table id="data">
-                <thead>
-                    <tr>
-                        <th>${toggle_LocationChunk(jsonData) ? 'Chunk' : 'Location'}</th>
-                        <th>%</th>
-                        <th>Dist.</th>
-                        <th>Nether${boatstatus}</th>
-                        ${showAngle(jsonData) ? `<th>Angle${getStatusSymbol(status)}</th>` : ""}
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        const boatState = showAngle(jsonData) ? "" : getStatusSymbol(status);
+        const headers = [
+            toggle_LocationChunk(jsonData) ? 'Chunk' : 'Location',
+            '%', 'Dist.', `Nether${boatState}`,
+            showAngle(jsonData) ? `Angle${getStatusSymbol(status)}` : ""
+        ].filter(Boolean);
 
-        if (jsonData.predictions.length > 0) {
-            jsonData.predictions.forEach(prediction => {
-                const certainty = (prediction.certainty * 100).toFixed(1);
-                const certaintyColor = getCertaintyColor(certainty);
+        const bodyRows = jsonData.predictions.map(prediction => {
+            const certainty = (prediction.certainty * 100).toFixed(1);
+            const certaintyColor = getCertaintyColor(certainty);
 
-                tableHTML += `
-                    <tr>
-                        <td>(${prediction.x}, ${prediction.z})</td>
-                        <td style="color:${certaintyColor}">${certainty}%</td>
-                        <td>${Math.round(prediction.overworldDistance)}</td>
-                        <td>(${prediction.netherX}, ${prediction.netherZ})</td>
-                        <td>
-                            ${showAngle(jsonData) ? 
-                                `${prediction.angle}
-                                <span style="color: ${getColorForDirection(prediction.direction)};">
-                                    (${prediction.direction ? (prediction.direction > 0 ? "-> " : "<- ") + Math.abs(prediction.direction).toFixed(1) : "N/A"})
-                                </span>` 
-                            : ""}
-                    </tr>
-                `;
-            });
-        }
+            const angleHTML = showAngle(jsonData) ? 
+                `${prediction.angle}
+                <span style="color: ${getColorForDirection(prediction.direction)};">
+                    (${prediction.direction ? (prediction.direction > 0 ? "-> " : "<- ") + Math.abs(prediction.direction).toFixed(1) : "N/A"})
+                </span>` 
+                : "";
 
-        tableHTML += `
-                </tbody>
-            </table>
-        `;
+            return generateRowHTML([
+                `(${prediction.x}, ${prediction.z})`,
+                `<span style="color:${certaintyColor}">${certainty}%</span>`,
+                `${Math.round(prediction.overworldDistance)}`,
+                `(${prediction.netherX}, ${prediction.netherZ})`,
+                angleHTML
+            ]);
+        });
 
-        return tableHTML;
+        return createTableHTML(headers, bodyRows);
     }
 
     const generateMisreadMessageTable = (jsonData, status) => {
-        const boatstatus = showAngle(jsonData) ? "" : getStatusSymbol(status);
-        return `
-            <table id="data">
-                <thead>
-                    <th>Blind${boatstatus}</th>
-                </thead>
-                <tbody>
-                    <tr><td>Could not determine the stronghold chunk.</td></tr>
-                    <tr><td>You probably misread one of the eyes.</td></tr>
-                    ${Array(3).fill().map(() => `<tr><td>---</td></tr>`).join('')}
-                </tbody>
-            </table>
-        `;
+        const boatState = showAngle(jsonData) ? "" : getStatusSymbol(status);
+        const headers = [`Blind${boatState}`];
+
+        const bodyRows = [
+            generateRowHTML(["Could not determine the stronghold chunk."]),
+            generateRowHTML(["You probably misread one of the eyes."]),
+            ...Array(3).fill(generateRowHTML(["&nbsp;"]))
+        ];
+
+        return createTableHTML(headers, bodyRows);
     }
 
     const generateBlindTable = (jsonData, status) => {
-        const boatstatus = showAngle(jsonData) ? "" : getStatusSymbol(status);
-        let tableHTML = `
-            <table id="data">
-                <thead>
-                    <th>Blind${boatstatus}</th>
-                </thead>
-                <tbody>
-        `;
+        const boatState = showAngle(jsonData) ? "" : getStatusSymbol(status);
+        const headers = [`Blind${boatState}`];
+        const bodyRows = [];
 
         if (jsonData.blindResult) {
             const blind = jsonData.blindResult;
-            const evaluation = blind.evaluation;
-            const evaluationColor = getevaluationColor(evaluation);
+            const evaluationColor = getevaluationColor(blind.evaluation);
 
-            tableHTML += `
-                <tr>
-                    <td>Blind coords (${blind.xInNether}, ${blind.zInNether}) are <span style="color:${evaluationColor}">${evaluation}</span></td>
-                </tr>
-                <tr>
-                    <td><span style="color:${evaluationColor}">${blind.highrollProbability}</span> chance of <400 block blind</td>
-                </tr>
-                <tr>
-                    <td>${blind.improveDirection}°, ${blind.improveDistance} blocks away, for better boords</td>
-                </tr>
-            `;
-            tableHTML += Array(2).fill().map(() => `<tr><td>---</td></tr>`).join('');
+            bodyRows.push(generateRowHTML([
+                `Blind coords (${blind.xInNether}, ${blind.zInNether}) are <span style="color:${evaluationColor}">${blind.evaluation}</span>`
+            ]));
+            bodyRows.push(generateRowHTML([
+                `<span style="color:${evaluationColor}">${blind.highrollProbability}</span> chance of <400 block blind`
+            ]));
+            bodyRows.push(generateRowHTML([
+                `${blind.improveDirection}°, ${blind.improveDistance} blocks away, for better coords`
+            ]));
+            bodyRows.push(...Array(2).fill(generateRowHTML(["---"])));
         }
 
-        tableHTML += `
-                </tbody>
-            </table>
-        `;
+        return createTableHTML(headers, bodyRows);
+    }
 
-        return tableHTML;
+    const generateDivineTable = (jsonData, status) => {
+        const boatState = showAngle(jsonData) ? "" : getStatusSymbol(status);
+        const divineResult = jsonData.divineResult;
+
+        const headers = [
+            `Fossile ${divineResult.fossilXCoordinate}`, 's1', 's2', `s3${boatState}`
+        ];
+
+        const bodyRows = [
+            generateRowHTML(['Safe:', ...[0, 1, 2].map(index => `(${getDivineCoord(divineResult.formattedSafeCoords, index)})`)]),
+            generateRowHTML(['Highroll:', ...[0, 1, 2].map(index => `(${getDivineCoord(divineResult.formattedHighrollCoords, index)})`)]),
+            ...Array(3).fill(generateRowHTML(['&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;']))
+        ];
+
+        return createTableHTML(headers, bodyRows);
     }
 
     const generateIdleTable = (jsonData, status) => {
-        const boatstatus = showAngle(jsonData) ? "" : getStatusSymbol(status);
-        let tableHTML = `
-            <table id="data">
-                <thead>
-                    <tr>
-                        <th>${toggle_LocationChunk(jsonData) ? 'Chunk' : 'Location'}</th>
-                        <th>%</th>
-                        <th>Dist.</th>
-                        <th>Nether${boatstatus}</th>
-                        ${showAngle(jsonData) ? `<th>Angle${getStatusSymbol(status)}</th>` : ""}
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        const boatState = showAngle(jsonData) ? "" : getStatusSymbol(status);
+        const headers = [
+            toggle_LocationChunk(jsonData) ? 'Chunk' : 'Location',
+            '%', 'Dist.', `Nether${boatState}`,
+            showAngle(jsonData) ? `Angle${getStatusSymbol(status)}` : ""
+        ].filter(Boolean);
 
-        [0, 1, 2, 3, 4].forEach(() => {
-            tableHTML += `
-                <tr>
-                    <td>(---, ---)</td>
-                    <td>--</td>
-                    <td>---</td>
-                    <td>(---, ---)</td>
-                    ${showAngle(jsonData) ? `<td>---</td>` : ""}
-                </tr>
-            `;
-        });
+        const bodyRows = Array(5).fill(generateRowHTML([
+            '&nbsp;', '&nbsp;', '&nbsp;', '&nbsp;', showAngle(jsonData) ? '&nbsp;' : ''
+        ]));
 
-        tableHTML += `
-                </tbody>
-            </table>
-        `;
-
-        return tableHTML;
+        return createTableHTML(headers, bodyRows);
     }
 
     const getStatusSymbol = (status) => {
         switch (status) {
+            case 200:
+            case 205:
+            case 210:
+            case 215:
+            case 500:
+                return " ⚫";
+    
             case 201:
             case 206:
             case 211:
+            case 216:
             case 501:
-                return " ⚫";
+                return " 🔵"; 
     
             case 202:
             case 207:
             case 212:
+            case 217:
             case 502:
-                return " 🔵"; 
+                return " 🟢";
     
             case 203:
             case 208:
             case 213:
+            case 218:
             case 503:
-                return " 🟢";
-    
-            case 204:
-            case 209:
-            case 214:
-            case 504:
                 return " 🔴";
     
             default:
@@ -201,7 +186,7 @@ const showAngle = (data) => {
 }
 
 const toggle_LocationChunk = (data) => {
-    const firstPred = data?.predictions[0];
+    const firstPred = data?.[0];
     return firstPred && firstPred.useChunk
 }
 
@@ -273,4 +258,14 @@ const getevaluationColor = (evaluation) => {
         return getColors(colorInfo.color1, colorInfo.color2, colorInfo.steps, colorInfo.step);
     }
     return '#FFFFFF'
+}
+
+const getDivineCoord = (coords, index) => {
+    const coordsArray = coords.split("), (").map(coord => coord.replace(/[()]/g, '').trim());
+
+    if (index >= 0 && index < coordsArray.length) {
+        return coordsArray[index];
+    } else {
+        return null;
+    }
 }
