@@ -31,7 +31,7 @@ const generateTable = (jsonData, status) => {
     if (status === 200) {
         return generateStrongholdTable(jsonData.stronghold, jsonData.useChunk, jsonData.angle);
     } else if (status === 210) {
-        return generateMisreadMessageTable(jsonData.stronghold);
+        return generateMisreadMessageTable();
     } else if (status === 220) {
         return generateBlindTable(jsonData.blind);
     } else if (status === 230) {
@@ -96,7 +96,7 @@ const generateStrongholdTable = (jsonData, toggleLocation, showAngle) => {
     return generateTableHTML(headers, bodyRows);
 };
 
-const generateMisreadMessageTable = (jsonData) => {
+const generateMisreadMessageTable = () => {
     const headers = ["&nbsp;"];
     const bodyRows = [
         generateRowHTML(["Could not determine the stronghold chunk."]),
