@@ -134,7 +134,7 @@ const generateDivineTable = (jsonData) => {
     const divineResult = jsonData.divineResult;
 
     const headers = [
-        `Fossile ${divineResult.fossilXCoordinate}`, 's1', 's2', `s3`
+        `Fossil ${divineResult.fossilXCoordinate}`, 's1', 's2', `s3`
     ];
 
     const bodyRows = [
