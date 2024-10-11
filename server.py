@@ -64,28 +64,6 @@ class DataFetcher:
     def get_data(self):
         return self.data
 
-    # def _sse_worker(self, url, data_name):
-    #     while True:
-    #         try:
-    #             client = SSEClient(url)
-    #             self.error = None
-                
-    #             for msg in client:
-    #                 if msg.event == 'message':
-    #                     self.data[data_name] = json.loads(msg.data)
-                
-    #         except Exception as e:
-    #             self.error = e.__str__()
-    #             time.sleep(5) # wait 5s before rc
-
-    # def fetch_version(self):
-    #     res = requests.get(f'{NINBOT_BASE_URL}/api/v1/version')
-    #     if res.status_code == 200:
-    #         self.data['version'] = res.json()['version']
-    
-    # def get_data(self):
-    #     return self.data
-
 def run_flask():
     app.run(host='0.0.0.0', port=PORT, debug=False)
 
