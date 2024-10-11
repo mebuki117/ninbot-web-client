@@ -77,7 +77,7 @@ def load_options():
         server_options = json.load(f)
 
 def radians_to_degrees(radians):
-    return round(radians * (180 / math.pi), 1)
+    return '{:.1f}'.format(round(radians * (180 / math.pi), 1))
 
 def get_predictions(data):
     predictions = []
@@ -106,13 +106,13 @@ def get_predictions(data):
             "netherZ": chunkZ * 2,
             "Distance": distance,         
             "angle": (
-                round(get_direction(current_position, target_position), 2)
+                '{:.2f}'.format(round(get_direction(current_position, target_position), 2))
                 if server_options.get('show_angle') 
                 and None not in current_position
                 else None
             ),
             "direction": (
-                round(get_direction(current_position, target_position, current_angle), 2)
+                '{:.2f}'.format(round(get_direction(current_position, target_position, current_angle), 2))
                 if server_options.get('show_angle')
                 and None not in current_position
                 and current_angle is not None
