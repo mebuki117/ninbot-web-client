@@ -249,17 +249,17 @@ def get_data():
     data['angle'] = server_options.get('show_angle', False)
     data['useChunk'] = server_options.get('use_chunk_coords', False)
 
-    if data['stronghold']['predictions']:
+    if data['stronghold'] and data['stronghold']['predictions']:
         data['stronghold'] = get_player_data(data['stronghold'], 'stronghold')
         return jsonify(data), 200 # stronghold
-    elif data['stronghold']['eyeThrows']:
+    elif data['stronghold'] and data['stronghold']['eyeThrows']:
         return jsonify(data), 210 # misread
 
-    if data['blind'].get('isBlindModeEnabled'):
+    if data['blind'] and data['blind'].get('isBlindModeEnabled'):
         data['blind'] = get_player_data(data['blind'], 'blind')
         return jsonify(data), 220 # blind
 
-    if data['divine'].get('isDivineModeEnabled'):
+    if data['divine'] and data['divine'].get('isDivineModeEnabled'):
         data['divine'] = get_player_data(data['divine'], 'divine')
         return jsonify(data), 230 # divine
     
