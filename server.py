@@ -119,8 +119,6 @@ def get_predictions(data):
                 chunkZ = pred['chunkZ']
                 target_position = ((chunkX * 16) + 4, (chunkZ * 16) + 4)
 
-                direction = round(get_direction(current_position, target_position, current_angle), 2)
-
                 if dimension == "the_nether":
                     distance = round(pred['overworldDistance'] / 8)
                 else:
@@ -134,7 +132,7 @@ def get_predictions(data):
                     "netherZ": chunkZ * 2,
                     "overworldDistance": distance,
                     "angle": round(get_direction(current_position, target_position), 2) if server_options['show_angle'] else None,
-                    "direction": direction
+                    "direction": round(get_direction(current_position, target_position, current_angle), 2)
                 })
     else:
         for pred in data['predictions']:
@@ -148,7 +146,7 @@ def get_predictions(data):
                 "netherX": chunkX * 2,
                 "netherZ": chunkZ * 2,
                 "overworldDistance": pred['overworldDistance'],
-                "angle": '---' if server_options['show_angle'] else None,
+                "angle": None,
                 "direction": None
             })
 

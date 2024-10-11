@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const dataDiv = document.getElementById('data');
-    let previousBoatState = null;
+    let previousboatState = null;
+    let previousangle = {};
+    let previousdirection = {};
 
     const update = async () => {
         const res = await fetch('/get_data');
@@ -9,15 +11,24 @@ document.addEventListener('DOMContentLoaded', function () {
             const jsonData = await res.json();
             console.log(jsonData);
 
-            if (jsonData.boat.boatState !== previousBoatState) {
+            if (jsonData.boat.boatState !== previousboatState) {
                 const headerHTML = generateHeaderHTML(jsonData.version, jsonData.boat.boatState);
                 const existingHeader = document.getElementById('header-bar');
                 if (existingHeader) {
                     existingHeader.remove();
                 }
                 dataDiv.insertAdjacentHTML('beforebegin', headerHTML);
-                previousBoatState = jsonData.boat.boatState;
+                previousboatState = jsonData.boat.boatState;
             }
+            jsonData.stronghold.predictions.forEach((predictions, index) => {
+                if (predictions.angle === null && predictions.direction === null) {
+                    predictions.angle = previousangle[index];
+                    predictions.direction = previousdirection[index];
+                } else {
+                    previousangle[index] = predictions.angle;
+                    previousdirection[index] = predictions.direction;
+                }
+            });            
             dataDiv.innerHTML = generateTable(jsonData, res.status);
         } else {
             dataDiv.innerHTML = "An error occurred.<br> Is your ninbot running and has the \"Enable API\" option on?";
