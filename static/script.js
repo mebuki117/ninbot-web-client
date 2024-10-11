@@ -89,7 +89,7 @@ const generateStrongholdTable = (jsonData, toggleLocation, showAngle) => {
         const certaintyColor = getCertaintyColor(certainty);
 
         const angleHTML = showAngle ? 
-            `${prediction.angle}
+            `${prediction.angle ? prediction.angle : "---"}
             <span style="color: ${getColorForDirection(prediction.direction)};">
                 (${prediction.direction ? (prediction.direction > 0 ? "-> " : "<- ") + Math.abs(prediction.direction).toFixed(1) : "N/A"})
             </span>` 
