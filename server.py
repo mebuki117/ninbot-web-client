@@ -5,8 +5,6 @@ import os
 import copy
 import math
 import logging
-import re
-import pyperclip
 import requests
 
 from flask import Flask, jsonify, request, render_template
