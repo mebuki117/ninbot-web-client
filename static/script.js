@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const dataDiv = document.getElementById('data');
-    let previousBoatState = null;
+    let previousboatState = null;
+    let previousangle = {};
+    let previousdirection = {};
 
     const update = async () => {
         const res = await fetch('/get_data');
@@ -9,15 +11,24 @@ document.addEventListener('DOMContentLoaded', function () {
             const jsonData = await res.json();
             console.log(jsonData);
 
-            if (jsonData.boat.boatState !== previousBoatState) {
+            if (jsonData.boat.boatState !== previousboatState) {
                 const headerHTML = generateHeaderHTML(jsonData.version, jsonData.boat.boatState);
                 const existingHeader = document.getElementById('header-bar');
                 if (existingHeader) {
                     existingHeader.remove();
                 }
                 dataDiv.insertAdjacentHTML('beforebegin', headerHTML);
-                previousBoatState = jsonData.boat.boatState;
+                previousboatState = jsonData.boat.boatState;
             }
+            jsonData.stronghold.predictions.forEach((predictions, index) => {
+                if (predictions.angle === null && predictions.direction === null) {
+                    predictions.angle = previousangle[index];
+                    predictions.direction = previousdirection[index];
+                } else {
+                    previousangle[index] = predictions.angle;
+                    previousdirection[index] = predictions.direction;
+                }
+            });            
             dataDiv.innerHTML = generateTable(jsonData, res.status);
         } else {
             dataDiv.innerHTML = "An error occurred.<br> Is your ninbot running and has the \"Enable API\" option on?";
@@ -31,7 +42,7 @@ const generateTable = (jsonData, status) => {
     if (status === 200) {
         return generateStrongholdTable(jsonData.stronghold, jsonData.useChunk, jsonData.angle);
     } else if (status === 210) {
-        return generateMisreadMessageTable(jsonData.stronghold);
+        return generateMisreadMessageTable();
     } else if (status === 220) {
         return generateBlindTable(jsonData.blind);
     } else if (status === 230) {
@@ -78,7 +89,7 @@ const generateStrongholdTable = (jsonData, toggleLocation, showAngle) => {
         const certaintyColor = getCertaintyColor(certainty);
 
         const angleHTML = showAngle ? 
-            `${prediction.angle}
+            `${prediction.angle ? prediction.angle : "---"}
             <span style="color: ${getColorForDirection(prediction.direction)};">
                 (${prediction.direction ? (prediction.direction > 0 ? "-> " : "<- ") + Math.abs(prediction.direction).toFixed(1) : "N/A"})
             </span>` 
@@ -96,7 +107,7 @@ const generateStrongholdTable = (jsonData, toggleLocation, showAngle) => {
     return generateTableHTML(headers, bodyRows);
 };
 
-const generateMisreadMessageTable = (jsonData) => {
+const generateMisreadMessageTable = () => {
     const headers = ["&nbsp;"];
     const bodyRows = [
         generateRowHTML(["Could not determine the stronghold chunk."]),
@@ -134,7 +145,7 @@ const generateDivineTable = (jsonData) => {
     const divineResult = jsonData.divineResult;
 
     const headers = [
-        `Fossile ${divineResult.fossilXCoordinate}`, 's1', 's2', `s3`
+        `Fossil ${divineResult.fossilXCoordinate}`, 's1', 's2', `s3`
     ];
 
     const bodyRows = [

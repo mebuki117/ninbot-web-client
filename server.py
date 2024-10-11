@@ -24,19 +24,23 @@ class DataFetcher:
         self.data = {}
         self.error = None
         
-        # sorry
-        self.t1 = threading.Thread(target=lambda: self._sse_worker(STRONGHOLD_SSE_URL, "stronghold"), daemon=True)
-        self.t2 = threading.Thread(target=lambda: self._sse_worker(BOAT_SSE_URL, "boat"), daemon=True)
-        self.t3 = threading.Thread(target=lambda: self._sse_worker(BLIND_SSE_URL, "blind"), daemon=True)
-        self.t4 = threading.Thread(target=lambda: self._sse_worker(DIVINE_SSE_URL, "divine"), daemon=True)
-        self.t5 = threading.Thread(target=self.fetch_version, daemon=True)
+        self.sse_urls = [
+            (STRONGHOLD_SSE_URL, "stronghold"),
+            (BOAT_SSE_URL, "boat"),
+            (BLIND_SSE_URL, "blind"),
+            (DIVINE_SSE_URL, "divine")
+        ]
+        
+        self.threads = [
+            threading.Thread(target=lambda url=url, key=key: self._sse_worker(url, key), daemon=True)
+            for url, key in self.sse_urls
+        ]
+        
+        self.threads.append(threading.Thread(target=self.fetch_version, daemon=True))
 
     def start(self):
-        self.t1.start()
-        self.t2.start()
-        self.t3.start()
-        self.t4.start()
-        self.t5.start()
+        for thread in self.threads:
+            thread.start()
 
     def _sse_worker(self, url, data_name):
         while True:
@@ -59,7 +63,6 @@ class DataFetcher:
     
     def get_data(self):
         return self.data
-
 
     # def _sse_worker(self, url, data_name):
     #     while True:
@@ -116,8 +119,6 @@ def get_predictions(data):
                 chunkZ = pred['chunkZ']
                 target_position = ((chunkX * 16) + 4, (chunkZ * 16) + 4)
 
-                direction = round(get_direction(current_position, target_position, current_angle), 2)
-
                 if dimension == "the_nether":
                     distance = round(pred['overworldDistance'] / 8)
                 else:
@@ -131,7 +132,7 @@ def get_predictions(data):
                     "netherZ": chunkZ * 2,
                     "overworldDistance": distance,
                     "angle": round(get_direction(current_position, target_position), 2) if server_options['show_angle'] else None,
-                    "direction": direction
+                    "direction": round(get_direction(current_position, target_position, current_angle), 2)
                 })
     else:
         for pred in data['predictions']:
@@ -145,7 +146,7 @@ def get_predictions(data):
                 "netherX": chunkX * 2,
                 "netherZ": chunkZ * 2,
                 "overworldDistance": pred['overworldDistance'],
-                "angle": '---' if server_options['show_angle'] else None,
+                "angle": None,
                 "direction": None
             })
 
