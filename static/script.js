@@ -103,7 +103,7 @@ const generateStrongholdTable = (jsonData, toggleLocation, showAngle) => {
         return generateRowHTML([
             `(${prediction.x}, ${prediction.z})`,
             `<span style="color:${certaintyColor}">${certainty}%</span>`,
-            `${Math.round(prediction.Distance)}`,
+            `${Math.round(prediction.distance)}`,
             `(${prediction.netherX}, ${prediction.netherZ})`,
             angleHTML
         ]);

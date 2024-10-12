@@ -102,7 +102,7 @@ def get_predictions(data):
             "z": chunkZ if server_options['use_chunk_coords'] else (chunkZ * 16 + 4),
             "netherX": chunkX * 2,
             "netherZ": chunkZ * 2,
-            "Distance": distance,         
+            "distance": distance,         
             "angle": (
                 '{:.2f}'.format(round(get_direction(current_position, target_position), 2))
                 if server_options.get('show_angle') 
